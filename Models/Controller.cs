@@ -131,8 +131,9 @@ namespace ReactorControl.Models
 
         #endregion
 
-        public Controller(byte addr)
+        public Controller(string name, byte addr)
         {
+            Name = name;
             UnitAddress = addr;
             Port = new SerialPortStream();
 
@@ -207,6 +208,7 @@ namespace ReactorControl.Models
 
         #region Props
 
+        public string Name {get;}
         public SerialPortStream Port { get; }
         public static int ConnectionTimeout { get; set; } = 300; //mS
         public bool IsConnected

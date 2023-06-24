@@ -1,5 +1,4 @@
 using System;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using ReactorControl.Models;
 
@@ -16,6 +15,14 @@ public class ContorllerViewModel : ViewModelBase
     public Controller Instance { get; }
     public ControllerConfig Config {get;}
 
+    public string Name
+    {
+        get => Config.Name;
+        set
+        {
+            Config.Name = value;
+        }
+    }
     public bool IsConnected => Instance.IsConnected;
     public string PortName
     {

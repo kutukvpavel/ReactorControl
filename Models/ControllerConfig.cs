@@ -18,6 +18,7 @@ public class ControllerConfig
 
     }
 
+    public string Name {get;set;} = "Example";
     public ConnectionTypes ConnectionType {get;set;} = ConnectionTypes.Serial;
     public string PortName {get;set;} = "COM1";
     public int ModbusAddress {get;set;} = 1;

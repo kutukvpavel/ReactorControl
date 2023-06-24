@@ -1,0 +1,3 @@
+[submodule "ModbusRegisterMap"]
+	path = ModbusRegisterMap
+	url = https://github.com/kutukvpavel/ModbusRegisterMap.git

@@ -67,6 +67,7 @@ namespace ReactorControl.Models
         {
             try
             {
+                if (Master == null) throw new Exception("Controller connection does not exist.");
                 //Add coils first
                 //None
 
@@ -80,19 +81,45 @@ namespace ReactorControl.Models
                 //Read configuration registers
                 foreach (var item in RegisterMap.ConfigRegisters)
                 {
-                    var reg = RegisterMap.InputRegisters[item] as IRegister;
+                    if (RegisterMap.InputRegisters[item] is not IRegister reg)
+                        throw new Exception($"Unknown register: {item}");
                     var read = await Master.ReadHoldingRegistersAsync(UnitAddress, reg.Address, reg.Length);
                     reg.Set(read);
                 }
                 //Build complete register map
                 int pumpsTotal = RegisterMap.GetHoldingWord(Constants.PumpsNumName);
+                int thermoTotal = RegisterMap.GetHoldingWord(Constants.ThermocouplesNumName);
+                int inputWords = RegisterMap.GetHoldingWord(Constants.InputWordsName);
+                int outputWords = RegisterMap.GetHoldingWord(Constants.OutputWordsName);
+                int analogTotal = RegisterMap.GetHoldingWord(Constants.AnalogInputNumName);
                 Log(null, $@"Device connected, config info:
-    Number of pumps = {pumpsTotal}");
-
+    Number of pumps = {pumpsTotal}
+    Number of thermocouples connected = {thermoTotal}
+    Input register len = {inputWords}
+    Output register len = {outputWords}
+    Analog inputs = {analogTotal}");
+                if (analogTotal > (int)Constants.AnalogInputs.LEN)
+                    Log(null, $"Warning: more analog inputs then defined for this software version have been detected. Update required?");
+                else if (analogTotal < (int)Constants.AnalogInputs.LEN)
+                    throw new Exception("Detected less analog inputs then defined for this version of software. Cannot continue.");
+                
                 //Input
-                RegisterMap.AddInput<DevFloat>("TEMP", 1);
-                //Holding
-                RegisterMap.AddHolding<AdcChannelCal>("ADC_CAL_", adcTotal);
+                //None
+
+                //Holding - all
+                RegisterMap.AddHolding<DevUShort>(Constants.StatusRegisterName, 1, true);
+                RegisterMap.AddHolding<DevUShort>(Constants.InterfaceActivityName, 1, true);
+                RegisterMap.AddHolding<DevUShort>(Constants.ModbusAddrName, 1);
+                RegisterMap.AddHolding<DevFloat>(Constants.ThermocoupleBaseName, thermoTotal, true);
+                RegisterMap.AddHolding<DevFloat>(Constants.AnalogInputBaseName, analogTotal, true);
+                RegisterMap.AddHolding<AioCal>(Constants.AnalogCalBaseName, analogTotal);
+                RegisterMap.AddHolding<DevUShort>(Constants.InputsRegisterBaseName, inputWords, true);
+                RegisterMap.AddHolding<DevUShort>(Constants.OutputsRegisterBaseName, outputWords, true);
+                RegisterMap.AddHolding<DevUShort>(Constants.CommandedOutputsBaseName, outputWords);
+                RegisterMap.AddHolding<DevPumpParams>(Constants.PumpParamsName, 1);
+                RegisterMap.AddHolding<DevMotorParams>(Constants.MotorParamsBaseName, pumpsTotal);
+                RegisterMap.AddHolding<DevMotorRegs>(Constants.MotorRegistersBaseName, pumpsTotal, true);
+                RegisterMap.AddHolding<DevFloat>(Constants.CommandedSpeedBaseName, pumpsTotal);
             }
             catch (Exception ex)
             {

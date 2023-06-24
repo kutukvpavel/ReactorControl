@@ -19,13 +19,13 @@ namespace ReactorControl.Models
         {
             public PollResult()
             {
-
+                Timestamp = DateTime.Now;
             }
 
-
+            public DateTime Timestamp { get; }
         }
 
-#region Private
+        #region Private
 
         protected object LockObject = new();
         protected SerialPortStreamAdapter? Adapter;
@@ -102,7 +102,7 @@ namespace ReactorControl.Models
                     Log(null, $"Warning: more analog inputs then defined for this software version have been detected. Update required?");
                 else if (analogTotal < (int)Constants.AnalogInputs.LEN)
                     throw new Exception("Detected less analog inputs then defined for this version of software. Cannot continue.");
-                
+
                 //Input
                 //None
 
@@ -128,14 +128,14 @@ namespace ReactorControl.Models
             }
             return true;
         }
-    
-#endregion
-        
+
+        #endregion
+
         public Controller(byte addr)
         {
             UnitAddress = addr;
             Port = new SerialPortStream();
-            
+
             PollTimer = new Timer(1000)
             {
                 AutoReset = true,
@@ -150,7 +150,7 @@ namespace ReactorControl.Models
             GC.SuppressFinalize(this);
         }
 
-#region Events
+        #region Events
 
         public event EventHandler<LogEventArgs>? LogEvent;
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -203,9 +203,9 @@ namespace ReactorControl.Models
             new Thread(() => { UnexpectedDisconnect?.Invoke(this, new EventArgs()); }).Start();
         }
 
-#endregion
+        #endregion
 
-#region Props
+        #region Props
 
         public SerialPortStream Port { get; }
         public static int ConnectionTimeout { get; set; } = 300; //mS
@@ -219,12 +219,12 @@ namespace ReactorControl.Models
             }
         }
         public Map RegisterMap { get; } = new Map();
-    
-#endregion
 
-#region Methods
+        #endregion
 
-public async Task<bool> Connect(string? portName = null)
+        #region Methods
+
+        public async Task<bool> Connect(string? portName = null)
         {
             if (Port.IsOpen) Port.Close();
             IsConnected = false;
@@ -280,17 +280,17 @@ public async Task<bool> Connect(string? portName = null)
         public async Task<IDeviceType> ReadRegister(string name)
         {
             if (Master == null) throw new Exception("Controller connection does not exist.");
-            
+
             if (RegisterMap.HoldingRegisters.Contains(name))
             {
-                if (RegisterMap.HoldingRegisters[name] is not IRegister reg) 
+                if (RegisterMap.HoldingRegisters[name] is not IRegister reg)
                     throw new ArgumentException($"Unknown register: {name}");
                 reg.Set(await Master.ReadHoldingRegistersAsync(UnitAddress, reg.Address, reg.Length));
                 return reg.Value;
             }
             if (RegisterMap.InputRegisters.Contains(name))
             {
-                if (RegisterMap.InputRegisters[name] is not IRegister reg) 
+                if (RegisterMap.InputRegisters[name] is not IRegister reg)
                     throw new ArgumentException($"Unknown register: {name}");
                 reg.Set(await Master.ReadInputRegistersAsync(UnitAddress, reg.Address, reg.Length));
                 return reg.Value;
@@ -299,7 +299,7 @@ public async Task<bool> Connect(string? portName = null)
         }
         public async Task<T> ReadRegister<T>(string name) where T : IDeviceType, new()
         {
-            return (T) await ReadRegister(name);
+            return (T)await ReadRegister(name);
         }
         public async Task WriteRegister(IRegister? reg)
         {
@@ -324,14 +324,14 @@ public async Task<bool> Connect(string? portName = null)
             try
             {
                 if (Master == null) throw new Exception("Controller connection does not exist.");
-                var res = new PollResult();
                 for (int i = 0; i < RegisterMap.PollHoldingRegisters.Count; i++)
                 {
                     if (RegisterMap.HoldingRegisters[RegisterMap.PollHoldingRegisters[i]] is not IRegister reg)
                         throw new Exception($"Unknown register: {RegisterMap.PollHoldingRegisters[i]}");
                     reg.Set(await Master.ReadHoldingRegistersAsync(UnitAddress, reg.Address, reg.Length));
+                    
                 }
-
+                var res = new PollResult();
                 return res;
             }
             catch (Exception ex)
@@ -341,7 +341,7 @@ public async Task<bool> Connect(string? portName = null)
             }
         }
 
-#endregion
+        #endregion
 
     }
 }

@@ -1,0 +1,4 @@
+.vscode/
+bin/
+obj/
+Avalonia.AXAML.LanguageServer.*.txt

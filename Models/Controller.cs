@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,8 +6,10 @@ using ModbusRegisterMap;
 using NModbus;
 using NModbus.SerialPortStream;
 using RJCP.IO.Ports;
-using Tmds.DBus;
+using Nito.AsyncEx;
+
 using Timer = System.Timers.Timer;
+using NModbus.Device;
 
 namespace ReactorControl.Models
 {
@@ -27,9 +27,9 @@ namespace ReactorControl.Models
 
         #region Private
 
-        protected object LockObject = new();
+        protected readonly AsyncLock LockObject = new();
         protected SerialPortStreamAdapter? Adapter;
-        protected IModbusMaster? Master;
+        protected IConcurrentModbusMaster? Master;
         protected readonly byte UnitAddress;
         protected readonly ModbusFactory Factory = new();
         protected readonly Timer PollTimer;
@@ -103,22 +103,18 @@ namespace ReactorControl.Models
                 else if (analogTotal < (int)Constants.AnalogInputs.LEN)
                     throw new Exception("Detected less analog inputs then defined for this version of software. Cannot continue.");
 
-                //Input
-                //None
-
-                //Holding - all
-                RegisterMap.AddHolding<DevUShort>(Constants.StatusRegisterName, 1, true);
+                RegisterMap.AddInput<DevUShort>(Constants.StatusRegisterName, 1, true);
                 RegisterMap.AddHolding<DevUShort>(Constants.InterfaceActivityName, 1, true);
                 RegisterMap.AddHolding<DevUShort>(Constants.ModbusAddrName, 1);
-                RegisterMap.AddHolding<DevFloat>(Constants.ThermocoupleBaseName, thermoTotal, true);
-                RegisterMap.AddHolding<DevFloat>(Constants.AnalogInputBaseName, analogTotal, true);
+                RegisterMap.AddInput<DevFloat>(Constants.ThermocoupleBaseName, thermoTotal, true);
+                RegisterMap.AddInput<DevFloat>(Constants.AnalogInputBaseName, analogTotal, true);
                 RegisterMap.AddHolding<AioCal>(Constants.AnalogCalBaseName, analogTotal);
-                RegisterMap.AddHolding<DevUShort>(Constants.InputsRegisterBaseName, inputWords, true);
-                RegisterMap.AddHolding<DevUShort>(Constants.OutputsRegisterBaseName, outputWords, true);
+                RegisterMap.AddInput<DevUShort>(Constants.InputsRegisterBaseName, inputWords, true);
+                RegisterMap.AddInput<DevUShort>(Constants.OutputsRegisterBaseName, outputWords, true);
                 RegisterMap.AddHolding<DevUShort>(Constants.CommandedOutputsBaseName, outputWords);
                 RegisterMap.AddHolding<DevPumpParams>(Constants.PumpParamsName, 1);
                 RegisterMap.AddHolding<DevMotorParams>(Constants.MotorParamsBaseName, pumpsTotal);
-                RegisterMap.AddHolding<DevMotorRegs>(Constants.MotorRegistersBaseName, pumpsTotal, true);
+                RegisterMap.AddInput<DevMotorReg>(Constants.MotorRegistersBaseName, pumpsTotal, true);
                 RegisterMap.AddHolding<DevFloat>(Constants.CommandedSpeedBaseName, pumpsTotal);
             }
             catch (Exception ex)
@@ -131,12 +127,11 @@ namespace ReactorControl.Models
 
         #endregion
 
-        public Controller(string name, byte addr)
+        public Controller(ControllerConfig cfg)
         {
-            Name = name;
-            UnitAddress = addr;
-            Port = new SerialPortStream();
-
+            if (cfg.ConnectionType != ConnectionTypes.Serial) throw new NotImplementedException();
+            Config = cfg;
+            Port = new SerialPortStream(cfg.PortName);
             PollTimer = new Timer(1000)
             {
                 AutoReset = true,
@@ -208,9 +203,11 @@ namespace ReactorControl.Models
 
         #region Props
 
-        public string Name {get;}
-        public SerialPortStream Port { get; }
         public static int ConnectionTimeout { get; set; } = 300; //mS
+
+
+        public ControllerConfig Config { get; }
+        public SerialPortStream Port { get; }
         public bool IsConnected
         {
             get { return _IsConnected; }
@@ -221,6 +218,8 @@ namespace ReactorControl.Models
             }
         }
         public Map RegisterMap { get; } = new Map();
+        public int TotalPumps => RegisterMap.GetHoldingWord(Constants.PumpsNumName);
+        public bool IsPolling => PollTimer.Enabled;
 
         #endregion
 
@@ -230,39 +229,43 @@ namespace ReactorControl.Models
         {
             if (Port.IsOpen) Port.Close();
             IsConnected = false;
-            if (portName != null) Port.PortName = portName;
-            Adapter = new SerialPortStreamAdapter(Port)
+            using (await LockObject.LockAsync())
             {
-                ReadTimeout = ConnectionTimeout,
-                WriteTimeout = ConnectionTimeout
-            };
-            try
-            {
-                Port.Open();
-                await Task.Delay(1000);
-                Port.ReadExisting();
-            }
-            catch (Exception ex)
-            {
-                Log(ex, "Failed to open port");
-                return false;
-            }
-            Master = Factory.CreateRtuMaster(Adapter);
-            try
-            {
-                await ReadRegister(Constants.StatusRegisterName); //Everything is OK if this doesn't timeout
-                IsConnected = await InitRegisterMap();
-                return IsConnected;
-            }
-            catch (TimeoutException ex)
-            {
-                Log(ex, "Connection timeout");
-                Port.Close();
-            }
-            catch (Exception ex)
-            {
-                Log(ex, "Unknown error");
-                Port.Close();
+                if (portName != null) Port.PortName = portName;
+                Master?.Dispose();
+                Adapter = new SerialPortStreamAdapter(Port)
+                {
+                    ReadTimeout = ConnectionTimeout,
+                    WriteTimeout = ConnectionTimeout
+                };
+                try
+                {
+                    Port.Open();
+                    await Task.Delay(1000);
+                    Port.ReadExisting();
+                }
+                catch (Exception ex)
+                {
+                    Log(ex, "Failed to open port");
+                    return false;
+                }
+                Master = new ConcurrentModbusMaster(Factory.CreateRtuMaster(Adapter), TimeSpan.FromMilliseconds(100));
+                try
+                {
+                    await ReadRegister(Constants.StatusRegisterName); //Everything is OK if this doesn't timeout
+                    IsConnected = await InitRegisterMap();
+                    return IsConnected;
+                }
+                catch (TimeoutException ex)
+                {
+                    Log(ex, "Connection timeout");
+                    Port.Close();
+                }
+                catch (Exception ex)
+                {
+                    Log(ex, "Unknown error");
+                    Port.Close();
+                }
             }
             return false;
         }
@@ -283,25 +286,37 @@ namespace ReactorControl.Models
         {
             if (Master == null) throw new Exception("Controller connection does not exist.");
 
-            if (RegisterMap.HoldingRegisters.Contains(name))
+            IRegister? reg = RegisterMap.HoldingRegisters[name] as IRegister;
+            if (reg != null)
             {
-                if (RegisterMap.HoldingRegisters[name] is not IRegister reg)
-                    throw new ArgumentException($"Unknown register: {name}");
                 reg.Set(await Master.ReadHoldingRegistersAsync(UnitAddress, reg.Address, reg.Length));
                 return reg.Value;
             }
-            if (RegisterMap.InputRegisters.Contains(name))
+            reg = RegisterMap.InputRegisters[name] as IRegister;
+            if (reg != null)
             {
-                if (RegisterMap.InputRegisters[name] is not IRegister reg)
-                    throw new ArgumentException($"Unknown register: {name}");
-                reg.Set(await Master.ReadInputRegistersAsync(UnitAddress, reg.Address, reg.Length));
+                reg.Set(await Master.ReadHoldingRegistersAsync(UnitAddress, reg.Address, reg.Length));
                 return reg.Value;
             }
-            throw new ArgumentException("Specified register name doen't exist!");
+            throw new ArgumentException($"Unable to find register '{name}'");
         }
         public async Task<T> ReadRegister<T>(string name) where T : IDeviceType, new()
         {
             return (T)await ReadRegister(name);
+        }
+        public async Task<T> ReadRegister<T>(Register<T> reg) where T : IDeviceType, new()
+        {
+            if (Master == null) throw new Exception("Controller connection does not exist.");
+
+            reg.Set(await Master.ReadHoldingRegistersAsync(UnitAddress, reg.Address, reg.Length));
+            return reg.TypedValue;
+        }
+        public async Task<object> ReadRegister(IRegister reg)
+        {
+            if (Master == null) throw new Exception("Controller connection does not exist.");
+
+            reg.Set(await Master.ReadHoldingRegistersAsync(UnitAddress, reg.Address, reg.Length));
+            return reg.Value;
         }
         public async Task WriteRegister(IRegister? reg)
         {
@@ -319,6 +334,7 @@ namespace ReactorControl.Models
             if (Master == null) throw new Exception("Controller connection does not exist.");
             if (RegisterMap.HoldingRegisters[name] is not IRegister reg)
                 throw new ArgumentException($"Unknown register: {name}");
+
             await Master.WriteMultipleRegistersAsync(UnitAddress, reg.Address, value.GetWords());
         }
         public async Task<PollResult> Poll()
@@ -326,12 +342,22 @@ namespace ReactorControl.Models
             try
             {
                 if (Master == null) throw new Exception("Controller connection does not exist.");
-                for (int i = 0; i < RegisterMap.PollHoldingRegisters.Count; i++)
+                using (await LockObject.LockAsync())
                 {
-                    if (RegisterMap.HoldingRegisters[RegisterMap.PollHoldingRegisters[i]] is not IRegister reg)
-                        throw new Exception($"Unknown register: {RegisterMap.PollHoldingRegisters[i]}");
-                    reg.Set(await Master.ReadHoldingRegistersAsync(UnitAddress, reg.Address, reg.Length));
-                    
+                    for (int i = 0; i < RegisterMap.PollInputRegisters.Count; i++)
+                    {
+                        string name = RegisterMap.PollInputRegisters[i];
+                        if (RegisterMap.InputRegisters[name] is not IRegister reg)
+                            throw new Exception($"Unknown register: {name}");
+                        reg.Set(await Master.ReadHoldingRegistersAsync(UnitAddress, reg.Address, reg.Length));
+                    }
+                    for (int i = 0; i < RegisterMap.PollHoldingRegisters.Count; i++)
+                    {
+                        string name = RegisterMap.PollHoldingRegisters[i];
+                        if (RegisterMap.HoldingRegisters[name] is not IRegister reg)
+                            throw new Exception($"Unknown register: {name}");
+                        reg.Set(await Master.ReadHoldingRegistersAsync(UnitAddress, reg.Address, reg.Length));
+                    }
                 }
                 var res = new PollResult();
                 return res;

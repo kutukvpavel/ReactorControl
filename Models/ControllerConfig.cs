@@ -5,14 +5,14 @@ using YamlDotNet.Serialization.NamingConventions;
 
 namespace ReactorControl.Models;
 
+public enum ConnectionTypes
+{
+    Serial,
+    TCP
+}
+
 public class ControllerConfig
 {
-    public enum ConnectionTypes
-    {
-        Serial,
-        TCP
-    }
-
     public ControllerConfig()
     {
 
@@ -21,7 +21,9 @@ public class ControllerConfig
     public string Name {get;set;} = "Example";
     public ConnectionTypes ConnectionType {get;set;} = ConnectionTypes.Serial;
     public string PortName {get;set;} = "COM1";
-    public int ModbusAddress {get;set;} = 1;
+    public string IPAddress { get; set; } = "127.0.0.1";
+    public byte ModbusAddress {get;set;} = 1;
+    public string VolumeRateUnit { get; set; } = "mL/min";
 
     public string Serialize()
     {

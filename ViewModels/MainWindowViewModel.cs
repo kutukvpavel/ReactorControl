@@ -5,24 +5,17 @@ namespace ReactorControl.ViewModels;
 
 public class MainWindowViewModel : ViewModelBase
 {
-    private readonly Controller[] Instances;
+    protected readonly Controller[] Instances;
 
-    public MainWindowViewModel(Controller[] c, ControllerConfig[] cfg)
+    public MainWindowViewModel(Controller[] c)
     {
         Instances = c;
-        Controllers = new ContorllerViewModel[c.Length];
+        Controllers = new ControllerControlViewModel[c.Length];
         for (int i = 0; i < c.Length; i++)
         {
-            if (cfg[i].ConnectionType != ControllerConfig.ConnectionTypes.Serial)
-            {
-                Console.WriteLine($"Connection type unsupproted: {cfg[i].ConnectionType}");
-                continue;
-            }
-            Controllers[i] = new ContorllerViewModel(c[i], cfg[i]);
+            Controllers[i] = new ControllerControlViewModel(c[i]);
         }
     }
 
-    public ContorllerViewModel[] Controllers { get; }
-
-    
+    public ControllerControlViewModel[] Controllers { get; }
 }

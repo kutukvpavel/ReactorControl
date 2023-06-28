@@ -2,8 +2,48 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+		xmlns:local="clr-namespace:ReactorControl.Views;assembly=ReactorControl"
         x:Class="ReactorControl.Views.RegisterView"
         Title="RegisterView">
-  
+	<Window.Styles>
+		<Style Selector="TextBlock">
+			<Setter Property="FontSize" Value="18"></Setter>
+			<Setter Property="Margin" Value="5,2"></Setter>
+		</Style>
+		<Style Selector="ScrollViewer">
+			<Setter Property="Margin" Value="1"></Setter>
+			<Setter Property="Padding" Value="0,3,3,3"></Setter>
+		</Style>
+	</Window.Styles>
+	<Grid>
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="*"></ColumnDefinition>
+			<ColumnDefinition Width="*"></ColumnDefinition>
+		</Grid.ColumnDefinitions>
+		<Grid.RowDefinitions>
+			<RowDefinition Height="auto"></RowDefinition>
+			<RowDefinition Height="auto"></RowDefinition>
+			<RowDefinition Height="*"></RowDefinition>
+		</Grid.RowDefinitions>
+		<TextBlock Grid.Column="0" Grid.Row="1" FontWeight="Bold">Input registers:</TextBlock>
+		<ScrollViewer VerticalScrollBarVisibility="Visible" Grid.Column="0" Grid.Row="2">
+			<ItemsControl ItemsSource="{Binding Registers}">
+				<ItemsControl.ItemTemplate>
+					<DataTemplate>
+						<local:RegisterEdit DataContext="{Binding Value}"></local:RegisterEdit>
+					</DataTemplate>
+				</ItemsControl.ItemTemplate>
+			</ItemsControl>
+		</ScrollViewer>
+		<TextBlock Grid.Column="1" Grid.Row="1" FontWeight="Bold">Holding registers:</TextBlock>
+		<ScrollViewer VerticalScrollBarVisibility="Visible" Grid.Column="1" Grid.Row="2">
+			<ItemsControl ItemsSource="{Binding Registers}">
+				<ItemsControl.ItemTemplate>
+					<DataTemplate>
+						<local:RegisterEdit DataContext="{Binding Value}"></local:RegisterEdit>
+					</DataTemplate>
+				</ItemsControl.ItemTemplate>
+			</ItemsControl>
+		</ScrollViewer>
+	</Grid>
 </Window>

@@ -55,9 +55,9 @@ namespace ReactorControl.Models
         }
     }
 
-    public class DevMotorRegs : ComplexDevTypeBase
+    public class DevMotorReg : ComplexDevTypeBase
     {
-        public DevMotorRegs()
+        public DevMotorReg()
         {
             Fields = new IDeviceType[] {
                 VolumeRate,

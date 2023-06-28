@@ -12,6 +12,13 @@ namespace ReactorControl.Models
             SaveNVS = 4,
             Reboot = 8
         }
+        [Flags]
+        public enum MotorStatusBits : ushort
+        {
+            Missing = 1,
+            Overload = 2,
+            Paused = 4
+        }
 
         //Config
         public static readonly string PumpsNumName = "PUMPS_NUM";

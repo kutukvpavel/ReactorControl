@@ -53,7 +53,7 @@ namespace ReactorControl.Models
         }
         public static readonly string[] ConfigRegisterNames = 
         {
-            PumpParamsName,
+            PumpsNumName,
             ThermocouplesNumName,
             InputWordsName,
             OutputWordsName

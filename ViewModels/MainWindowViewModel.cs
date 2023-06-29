@@ -29,7 +29,7 @@ public class MainWindowViewModel : ViewModelBase
 
     public ObservableCollection<Controller> ModelInstances { get; }
     public ObservableCollection<ControllerControlViewModel> Controllers { get; }
-    public Settings SettingsContext { get; set; }
+    public Settings SettingsContext { get; private set; }
 
     public async Task SaveSettings()
     {
@@ -62,6 +62,11 @@ public class MainWindowViewModel : ViewModelBase
         {
             item.LogDataReceived += Item_LogDataReceived;
         }
+    }
+    public void UpdateSettingsContext(Settings s)
+    {
+        SettingsContext = s;
+        RaisePropertyChanged(nameof(SettingsContext));
     }
 
     private void Item_LogDataReceived(object? sender, LogEventArgs e)

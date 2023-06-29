@@ -30,7 +30,7 @@ public partial class App : Application
         AvaloniaXamlLoader.Load(this);
     }
 
-    public ObservableCollection<Controller> Controllers { get; set; } = new ObservableCollection<Controller>();
+    public ObservableCollection<Controller> Controllers { get; } = new ObservableCollection<Controller>();
 
     public void LogError(string message, Exception ex)
     {
@@ -82,9 +82,11 @@ public partial class App : Application
     {
         SaveDevices();
     }
-    private void Vm_LoadRequest(object? sender, EventArgs e)
+    private async void Vm_LoadRequest(object? sender, EventArgs e)
     {
         LoadDevices();
+        MainWindowViewModel vm = sender as MainWindowViewModel ?? throw new NullReferenceException();
+        await vm.Trigger();
     }
     protected static string GetFullyQualifiedPath(string orig)
     {
@@ -130,6 +132,7 @@ public partial class App : Application
                 SaveSettings();
             }
             Settings = Settings.Deserialize(File.ReadAllText(p));
+            (MainWindow?.DataContext as MainWindowViewModel)?.UpdateSettingsContext(Settings);
             Log($"Settings file loaded from '{p}'");
         }
         catch (Exception ex)
@@ -158,6 +161,7 @@ public partial class App : Application
         Log("Device load started...");
         try
         {
+            Controllers.Clear();
             dir = GetDevicesPath();
             EnsureDirectoryExists(dir);
         }

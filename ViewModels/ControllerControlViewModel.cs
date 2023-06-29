@@ -42,7 +42,7 @@ public class ControllerControlViewModel : ViewModelBase
     public PumpControlViewModel[] Pumps { get; }
     public bool CanConnect => !Instance.IsConnected && SerialPortStream.GetPortNames().Contains(Instance.Config.PortName);
     public bool CanDisconnect => Instance.IsConnected;
-    public string Status { get; set; } = "Initializing...";
+    public string Status { get; set; } = "Not connected.";
 
     public string Name
     {

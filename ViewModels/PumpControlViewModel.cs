@@ -9,7 +9,8 @@ namespace ReactorControl.ViewModels
 {
     public class PumpControlViewModel : ViewModelBase
     {
-        public static string SpeedNumberFormat = "F3";
+        public static string SpeedNumberFormat { get; set; } = "F3";
+        public static string NotAvailable { get; set; } = "N/A";
 
         protected Controller mController;
 
@@ -17,39 +18,37 @@ namespace ReactorControl.ViewModels
         {
             mController = c;
             Index = index;
-            if (mController.RegisterMap.HoldingRegisters[Constants.MotorRegistersBaseName + Index.ToString()] 
-                is not Register<DevMotorReg> reg)
-                throw new Exception("Can't find motor register");
-            MotorReg = reg;
-            if (mController.RegisterMap.HoldingRegisters[Constants.MotorParamsBaseName + Index.ToString()]
-                is not Register<DevMotorParams> param)
-                throw new Exception("Can't find motor register");
-            MotorParams = param;
-            if (mController.RegisterMap.HoldingRegisters[Constants.CommandedSpeedBaseName + Index.ToString()]
-                is not Register<DevFloat> commanded)
-                throw new Exception("Can't find motor commanded speed register");
-            CommandedSpeedRegister = commanded;
+            MotorReg = mController.RegisterMap.HoldingRegisters[Constants.MotorRegistersBaseName + Index.ToString()]
+                as Register<DevMotorReg>;
+            MotorParams = mController.RegisterMap.HoldingRegisters[Constants.MotorParamsBaseName + Index.ToString()]
+                as Register<DevMotorParams>;
+            CommandedSpeedRegister = mController.RegisterMap.HoldingRegisters[Constants.CommandedSpeedBaseName + Index.ToString()]
+                as Register<DevFloat>;
         }
 
         public int Index { get; }
         public string IndexString => $"Pump #{Index}";
         public string VolumeRateUnit => mController.Config.VolumeRateUnit;
-        public Register<DevMotorReg> MotorReg { get; }
-        public Register<DevMotorParams> MotorParams { get; }
-        public Register<DevFloat> CommandedSpeedRegister { get; }
-        public Constants.MotorStatusBits MotorStatus => (Constants.MotorStatusBits)MotorReg.TypedValue.Status.Value;
-        public string VolumeRate => MotorReg.TypedValue.VolumeRate.Value.ToString(SpeedNumberFormat, CultureInfo.CurrentUICulture);
-        public string RotationSpeed => MotorReg.TypedValue.RPS.Value.ToString("F4", CultureInfo.CurrentUICulture);
-        public string CommandedSpeed => 
-            CommandedSpeedRegister.TypedValue.Value.ToString(SpeedNumberFormat, CultureInfo.CurrentUICulture);
-        public string Load => (MotorReg.TypedValue.Error.Value * 100).ToString("F0", CultureInfo.CurrentUICulture);
+        public Register<DevMotorReg>? MotorReg { get; }
+        public Register<DevMotorParams>? MotorParams { get; }
+        public Register<DevFloat>? CommandedSpeedRegister { get; }
+        public Constants.MotorStatusBits? MotorStatus => (Constants.MotorStatusBits?)MotorReg?.TypedValue.Status.Value;
+        public string? VolumeRate => MotorReg?.TypedValue.VolumeRate.Value
+            .ToString(SpeedNumberFormat, CultureInfo.CurrentUICulture);
+        public string? RotationSpeed => MotorReg?.TypedValue.RPS.Value.ToString("F4", CultureInfo.CurrentUICulture);
+        public string? CommandedSpeed => CommandedSpeedRegister?.TypedValue.Value
+            .ToString(SpeedNumberFormat, CultureInfo.CurrentUICulture) ?? NotAvailable;
+        public bool CanEdit => CommandedSpeedRegister != null && MotorReg != null;
+        public string? Load => MotorReg == null ? NotAvailable :
+            (MotorReg.TypedValue.Error.Value * 100).ToString("F0", CultureInfo.CurrentUICulture);
         public string StatusString
         {
             get
             {
-                if (MotorStatus.HasFlag(Constants.MotorStatusBits.Missing)) return "Missing!";
-                if (MotorStatus.HasFlag(Constants.MotorStatusBits.Overload)) return "Overload!";
-                if (MotorStatus.HasFlag(Constants.MotorStatusBits.Paused)) return "Paused";
+                if (MotorStatus == null) return "Not Connected";
+                if (MotorStatus.Value.HasFlag(Constants.MotorStatusBits.Missing)) return "Missing!";
+                if (MotorStatus.Value.HasFlag(Constants.MotorStatusBits.Overload)) return "Overload!";
+                if (MotorStatus.Value.HasFlag(Constants.MotorStatusBits.Paused)) return "Paused";
                 return "OK";
             }
         }
@@ -57,15 +56,17 @@ namespace ReactorControl.ViewModels
         {
             get
             {
-                if (MotorStatus.HasFlag(Constants.MotorStatusBits.Missing)) return Brushes.LightSalmon;
-                if (MotorStatus.HasFlag(Constants.MotorStatusBits.Overload)) return Brushes.LightCoral;
-                if (MotorStatus.HasFlag(Constants.MotorStatusBits.Paused)) return Brushes.LightBlue;
+                if (MotorStatus == null) return Brushes.LightGray;
+                if (MotorStatus.Value.HasFlag(Constants.MotorStatusBits.Missing)) return Brushes.LightSalmon;
+                if (MotorStatus.Value.HasFlag(Constants.MotorStatusBits.Overload)) return Brushes.LightCoral;
+                if (MotorStatus.Value.HasFlag(Constants.MotorStatusBits.Paused)) return Brushes.LightBlue;
                 return Brushes.LightGreen;
             }
         }
 
         public async Task SetVolumeRate(float v)
         {
+            if (CommandedSpeedRegister == null || MotorReg == null) return;
             CommandedSpeedRegister.TypedValue.Value = v; //Commanded registers are not polled, no concurrency expected
             await mController.WriteRegister(CommandedSpeedRegister);
             if (mController.IsPolling) return;

@@ -1,4 +1,3 @@
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using ReactorControl.ViewModels;
@@ -13,6 +12,26 @@ public partial class ControllerControl : UserControl
     public ControllerControl()
     {
         InitializeComponent();
+        Loaded += ControllerControl_Loaded;
+        btnConnect.Click += BtnConnect_Click;
+        btnDisconnect.Click += BtnDisconnect_Click;
+    }
+
+    protected ControllerControlViewModel? ViewModel => DataContext as ControllerControlViewModel;
+
+    private void BtnDisconnect_Click(object? sender, RoutedEventArgs e)
+    {
+        ViewModel?.Disconnect();
+    }
+
+    private void BtnConnect_Click(object? sender, RoutedEventArgs e)
+    {
+        ViewModel?.Connect();
+    }
+
+    private void ControllerControl_Loaded(object? sender, RoutedEventArgs e)
+    {
+        ViewModel?.SetStatus("Not connnected.");
     }
 
     public void RegisterView_Click(object? sender, RoutedEventArgs e)
@@ -30,7 +49,7 @@ public partial class ControllerControl : UserControl
         RegisterViewWindow.Show();
     }
 
-    private void Vw_Closed(object? sender, System.EventArgs e)
+    private void Vw_Closed(object? sender, EventArgs e)
     {
         if (RegisterViewWindow == null) throw new NullReferenceException();
         RegisterViewWindow.Closed -= Vw_Closed;

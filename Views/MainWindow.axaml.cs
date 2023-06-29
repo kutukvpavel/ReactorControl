@@ -1,16 +1,69 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using MessageBox.Avalonia;
 using ReactorControl.ViewModels;
 using System;
+using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace ReactorControl.Views;
 
 public partial class MainWindow : Window
 {
+    protected const string Website = "https://github.com/kutukvpavel/ReactorControl";
+
     public MainWindow()
     {
         InitializeComponent();
         btnAbout.Click += BtnAbout_Click;
+        btnProjectRepo.Click += BtnProjectRepo_Click;
+        btnSettings.Click += BtnSettings_Click;
+        btnConnectAll.Click += BtnConnectAll_Click;
+        btnDisconnectAll.Click += BtnDisconnectAll_Click;
+    }
+
+    private void BtnDisconnectAll_Click(object? sender, RoutedEventArgs e)
+    {
+        foreach (var item in ViewModel.Controllers)
+        {
+            if (item.CanDisconnect) item.Disconnect();
+        }
+    }
+
+    private async void BtnConnectAll_Click(object? sender, RoutedEventArgs e)
+    {
+        foreach (var item in ViewModel.Controllers)
+        {
+            if (item.CanConnect) await item.Connect();
+        }
+    }
+
+    private async void BtnSettings_Click(object? sender, RoutedEventArgs e)
+    {
+        SettingsDialog dialog = new()
+        {
+            DataContext = ViewModel.SettingsContext
+        };
+        if (await dialog.ShowDialog<bool>(this))
+        {
+            await ViewModel.SaveSettings();
+        }
+        await ViewModel.LoadSettings();
+    }
+
+    private async void BtnProjectRepo_Click(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo(Website) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            var m = MessageBoxManager.GetMessageBoxStandardWindow("ReactorControl",
+                @$"Can't open web link: {Website}, details:
+{ex.Message}");
+            await m.ShowDialog(this);
+        }
     }
 
     private async void BtnAbout_Click(object? sender, RoutedEventArgs e)
@@ -40,10 +93,7 @@ public partial class MainWindow : Window
         {
             await ViewModel.Save();
         }
-        else
-        {
-            await ViewModel.Load();
-        }
+        await ViewModel.Load();
         vm.ListChanged -= Vm_ListChanged;
     }
 

@@ -27,7 +27,7 @@
 		</Grid.RowDefinitions>
 		<TextBlock Grid.Column="0" Grid.Row="1" FontWeight="Bold">Input registers:</TextBlock>
 		<ScrollViewer VerticalScrollBarVisibility="Visible" Grid.Column="0" Grid.Row="2">
-			<ItemsControl ItemsSource="{Binding Registers}">
+			<ItemsControl ItemsSource="{Binding InputRegisters}">
 				<ItemsControl.ItemTemplate>
 					<DataTemplate>
 						<local:RegisterEdit DataContext="{Binding Value}"></local:RegisterEdit>
@@ -37,7 +37,7 @@
 		</ScrollViewer>
 		<TextBlock Grid.Column="1" Grid.Row="1" FontWeight="Bold">Holding registers:</TextBlock>
 		<ScrollViewer VerticalScrollBarVisibility="Visible" Grid.Column="1" Grid.Row="2">
-			<ItemsControl ItemsSource="{Binding Registers}">
+			<ItemsControl ItemsSource="{Binding HoldingRegisters}">
 				<ItemsControl.ItemTemplate>
 					<DataTemplate>
 						<local:RegisterEdit DataContext="{Binding Value}"></local:RegisterEdit>

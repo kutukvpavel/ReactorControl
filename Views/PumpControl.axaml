@@ -23,7 +23,8 @@
 							Header="{Binding IndexString}">
 		<Grid ColumnDefinitions="auto, *, auto" RowDefinitions="auto,auto,auto,auto">
 			<TextBlock Grid.Column="0" Grid.Row="0" Classes="name">Commanded volume rate:</TextBlock>
-			<TextBox Grid.Column="1" Grid.Row="0" Text="{Binding CommandedSpeed}" KeyDown="Commanded_KeyDown"></TextBox>
+			<TextBox Grid.Column="1" Grid.Row="0" Text="{Binding CommandedSpeed}" KeyDown="Commanded_KeyDown"
+					 IsReadOnly="{Binding CanEdit}"></TextBox>
 			<TextBlock Grid.Column="2" Grid.Row="0" Classes="unit" Text="{Binding VolumeRateUnit}">mL/min</TextBlock>
 			<TextBlock Grid.Column="0" Grid.Row="1" Classes="name">Actual volume rate:</TextBlock>
 			<TextBox Grid.Column="1" Grid.Row="1" IsReadOnly="True" Text="{Binding VolumeRate}"></TextBox>

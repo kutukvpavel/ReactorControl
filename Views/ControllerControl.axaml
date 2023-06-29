@@ -9,9 +9,15 @@
 		<Style Selector="TextBlock">
 			<Setter Property="FontSize" Value="16"></Setter>
 		</Style>
+		<Style Selector="Button.ExpanderButtons">
+			<Setter Property="Margin" Value="3,5"></Setter>
+			<Setter Property="HorizontalAlignment" Value="Stretch"></Setter>
+			<Setter Property="HorizontalContentAlignment" Value="Center"></Setter>
+		</Style>
 	</UserControl.Styles>
-	<Grid ColumnDefinitions="auto,*" RowDefinitions="auto,*">
-		<Expander ExpandDirection="Right" Grid.RowSpan="2" VerticalContentAlignment="Top">
+	<Grid ColumnDefinitions="auto,*" RowDefinitions="auto,*,auto">
+		<Expander ExpandDirection="Right" Grid.RowSpan="2" VerticalContentAlignment="Top"
+				  VerticalAlignment="Stretch">
 			<Expander.Header>
 				<LayoutTransformControl>
 					<LayoutTransformControl.LayoutTransform>
@@ -21,8 +27,18 @@
 				</LayoutTransformControl>
 			</Expander.Header>
 			<StackPanel>
-				<Button Margin="3,5" Background="LightBlue" Click="RegisterView_Click">Open Register View...</Button>
-				<HeaderedContentControl VerticalAlignment="Stretch" VerticalContentAlignment="Stretch" Grid.Column="0" Grid.Row="0"
+				<Button Classes="ExpanderButtons" Background="LightGreen" IsEnabled="{Binding CanConnect}"
+						x:Name="btnConnect">
+					Connect
+				</Button>
+				<Button Classes="ExpanderButtons" Background="LightSalmon" IsEnabled="{Binding CanDisconnect}"
+						x:Name="btnDisconnect">
+					Disconnect
+				</Button>
+				<Button Classes="ExpanderButtons" Background="LightBlue" 
+						Click="RegisterView_Click">Open Register View...</Button>
+				<HeaderedContentControl VerticalAlignment="Stretch" VerticalContentAlignment="Stretch" 
+										Grid.Column="0" Grid.Row="0"
 										Header="Interface State">
 					<local:InterfaceState DataContext="{Binding InterfaceState}"></local:InterfaceState>
 				</HeaderedContentControl>
@@ -35,5 +51,11 @@
 				</DataTemplate>
 			</ItemsControl.ItemTemplate>
 		</ItemsControl>
+		<Border Grid.ColumnSpan="2" Grid.Row="2" Margin="0,1,0,0" Padding="3" BorderBrush="Gray" BorderThickness="1">
+			<StackPanel HorizontalAlignment="Stretch" Orientation="Horizontal">
+				<TextBlock Margin="0,0,5,0">Status:</TextBlock>
+				<TextBlock Text="{Binding Status}"></TextBlock>
+			</StackPanel>
+		</Border>
 	</Grid>
 </UserControl>

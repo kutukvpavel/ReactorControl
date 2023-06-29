@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Specialized;
+using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Media;
+using Avalonia.Threading;
 using ReactorControl.Models;
+using RJCP.IO.Ports;
 
 namespace ReactorControl.ViewModels;
 
@@ -17,6 +20,19 @@ public class ControllerControlViewModel : ViewModelBase
         {
             Pumps[i] = new PumpControlViewModel(c, i);
         }
+        Instance.PropertyChanged += Instance_PropertyChanged;
+        Instance.LogEvent += Instance_LogEvent;
+    }
+
+    private void Instance_LogEvent(object? sender, LogEventArgs e)
+    {
+        Log(sender, e);
+    }
+
+    private void Instance_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        RaisePropertyChanged(nameof(CanConnect));
+        RaisePropertyChanged(nameof(CanDisconnect));
     }
 
     public Controller Instance { get; }
@@ -24,6 +40,9 @@ public class ControllerControlViewModel : ViewModelBase
     public OrderedDictionary InputRegisters => Instance.RegisterMap.InputRegisters;
     public InterfaceStateViewModel InterfaceState { get; }
     public PumpControlViewModel[] Pumps { get; }
+    public bool CanConnect => !Instance.IsConnected && SerialPortStream.GetPortNames().Contains(Instance.Config.PortName);
+    public bool CanDisconnect => Instance.IsConnected;
+    public string Status { get; set; } = "Initializing...";
 
     public string Name
     {
@@ -46,6 +65,21 @@ public class ControllerControlViewModel : ViewModelBase
 
     public async Task Connect()
     {
-        await Instance.Connect(PortName);
+        SetStatus("Connecting...");
+        SetStatus(await Instance.Connect(PortName) ? "Connected OK." : "Connection failed.");
+    }
+    public void Disconnect()
+    {
+        SetStatus(Instance.Disconnect() ? "Disconnected OK." : "Diconnect failed.");
+    }
+
+    public void Trigger()
+    {
+        Dispatcher.UIThread.Post(() => { RaisePropertyChanged(nameof(CanConnect)); });
+    }
+    public void SetStatus(string s)
+    {
+        Status = s;
+        RaisePropertyChanged(nameof(Status));
     }
 }

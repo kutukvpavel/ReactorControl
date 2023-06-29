@@ -10,6 +10,7 @@ using Nito.AsyncEx;
 
 using Timer = System.Timers.Timer;
 using NModbus.Device;
+using System.Collections;
 
 namespace ReactorControl.Models
 {
@@ -117,6 +118,10 @@ namespace ReactorControl.Models
                 RegisterMap.AddInput<DevMotorReg>(Constants.MotorRegistersBaseName, pumpsTotal, true);
                 RegisterMap.AddHolding<DevFloat>(Constants.CommandedSpeedBaseName, pumpsTotal);
             }
+            catch (TimeoutException)
+            {
+                throw; //Allow Connect() to differentiate faults
+            }
             catch (Exception ex)
             {
                 Log(ex, "Failed to initialize register map.");
@@ -164,17 +169,6 @@ namespace ReactorControl.Models
             }
         }
 
-        public class LogEventArgs : EventArgs
-        {
-            public Exception? Exception { get; }
-            public string Message { get; }
-            public LogEventArgs(Exception? e, string msg)
-            {
-                Exception = e;
-                Message = msg;
-            }
-        }
-
         public class TerminalEventArgs : EventArgs
         {
             public string Line { get; }
@@ -215,10 +209,11 @@ namespace ReactorControl.Models
             {
                 _IsConnected = value;
                 OnPropertyChanged(nameof(IsConnected));
+                OnPropertyChanged(nameof(TotalPumps));
             }
         }
         public Map RegisterMap { get; } = new Map();
-        public int TotalPumps => RegisterMap.GetHoldingWord(Constants.PumpsNumName);
+        public int TotalPumps => IsConnected ? RegisterMap.GetHoldingWord(Constants.PumpsNumName) : 0;
         public bool IsPolling => PollTimer.Enabled;
 
         #endregion
@@ -252,7 +247,6 @@ namespace ReactorControl.Models
                 Master = new ConcurrentModbusMaster(Factory.CreateRtuMaster(Adapter), TimeSpan.FromMilliseconds(100));
                 try
                 {
-                    await ReadRegister(Constants.StatusRegisterName); //Everything is OK if this doesn't timeout
                     IsConnected = await InitRegisterMap();
                     return IsConnected;
                 }
@@ -368,7 +362,27 @@ namespace ReactorControl.Models
                 throw;
             }
         }
-
+        public async Task ReadAll()
+        {
+            if (Master == null) throw new Exception("Controller connection does not exist.");
+            foreach (DictionaryEntry item in RegisterMap.InputRegisters)
+            {
+                var reg = (item.Value as IRegister);
+                if (reg == null) continue;
+                reg.Set(await Master.ReadHoldingRegistersAsync(UnitAddress, reg.Address, reg.Length));
+            }
+            foreach (DictionaryEntry item in RegisterMap.HoldingRegisters)
+            {
+                var reg = (item.Value as IRegister);
+                if (reg == null) continue;
+                reg.Set(await Master.ReadHoldingRegistersAsync(UnitAddress, reg.Address, reg.Length));
+            }
+        }
+        public void SetAutoPoll(bool enable)
+        {
+            PollTimer.Enabled = enable;
+            OnPropertyChanged(nameof(IsPolling));
+        }
         #endregion
 
     }

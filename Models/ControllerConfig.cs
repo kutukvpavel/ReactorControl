@@ -1,5 +1,4 @@
 using System;
-using System.Security;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -13,6 +12,14 @@ public enum ConnectionTypes
 
 public class ControllerConfig
 {
+    public static ControllerConfig Deserialize(string yaml)
+    {
+        var deserializer = new DeserializerBuilder()
+            .WithNamingConvention(PascalCaseNamingConvention.Instance)
+            .Build();
+        return deserializer.Deserialize<ControllerConfig>(yaml);
+    }
+
     public ControllerConfig()
     {
 

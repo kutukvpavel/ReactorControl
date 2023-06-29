@@ -1,0 +1,47 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+		xmlns:local="clr-namespace:ReactorControl.Views;assembly=ReactorControl"
+        x:Class="ReactorControl.Views.AddRemoveDevices"
+        Title="AddRemoveDevices" Width="500" Height="300">
+	<Window.Styles>
+		<Style Selector="Button.OKCancel">
+			<Setter Property="Width" Value="150"></Setter>
+			<Setter Property="Margin" Value="5"></Setter>
+			<Setter Property="HorizontalContentAlignment" Value="Center"></Setter>
+		</Style>
+		<Style Selector="Button.AddRemove">
+			<Setter Property="Margin" Value="5"></Setter>
+			<Setter Property="FontSize" Value="18"></Setter>
+			<Setter Property="FontWeight" Value="Bold"></Setter>
+			<Setter Property="Width" Value="35"></Setter>
+			<Setter Property="HorizontalContentAlignment" Value="Center"></Setter>
+			<Setter Property="VerticalContentAlignment" Value="Center"></Setter>
+			<Setter Property="VerticalAlignment" Value="Top"></Setter>
+		</Style>
+	</Window.Styles>
+	<Grid ColumnDefinitions="auto,*,*" RowDefinitions="auto,*,auto">
+		<TabControl Grid.Column="1" Grid.Row="0" Grid.ColumnSpan="2" Grid.RowSpan="2" x:Name="tabDevices"
+					ItemsSource="{Binding Devices}" TabStripPlacement="Left" 
+					SelectedItem="{Binding Selected, Mode=OneWayToSource}">
+			<TabControl.ItemTemplate>
+				<DataTemplate>
+					<TextBlock Text="{Binding Header}"></TextBlock>
+				</DataTemplate>
+			</TabControl.ItemTemplate>
+			<TabControl.ContentTemplate>
+				<DataTemplate>
+					<local:DeviceEdit DataContext="{Binding}"></local:DeviceEdit>
+				</DataTemplate>
+			</TabControl.ContentTemplate>
+		</TabControl>
+		<Button Grid.Column="1" Grid.Row="2" x:Name="btnOK" Classes="OKCancel" Background="LightGreen"
+				HorizontalAlignment="Left">OK</Button>
+		<Button Grid.Column="2" Grid.Row="2" x:Name="btnCancel" Classes="OKCancel" Background="LightCoral"
+				HorizontalAlignment="Right">Cancel</Button>
+		<Button Grid.Column="0" Grid.Row="0" x:Name="btnRemove" Classes="AddRemove" Background="LightSalmon"
+				IsEnabled="{Binding CanRemove}">-</Button>
+		<Button Grid.Column="0" Grid.Row="1" x:Name="btnAdd" Classes="AddRemove" Background="LightBlue">+</Button>
+	</Grid>
+</Window>

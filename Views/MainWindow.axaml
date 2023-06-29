@@ -18,11 +18,10 @@
 			</MenuItem>
 			<MenuItem Header="Help">
 				<MenuItem Header="Project Repository"></MenuItem>
-				<MenuItem Header="About"></MenuItem>
+				<MenuItem Header="About" x:Name="btnAbout"></MenuItem>
 			</MenuItem>
 		</Menu>
-		<TabControl Name="tabConnections" Padding="5" Grid.Column="0" Grid.Row="1" DataContext="{Binding Controllers}" 
-					ItemsSource="{Binding}">
+		<TabControl Name="tabConnections" Padding="5" Grid.Column="0" Grid.Row="1" ItemsSource="{Binding Controllers}">
 			<TabControl.Styles>
 				<Style Selector="TabControl#tabConnections > Border > DockPanel > ItemsPresenter > WrapPanel">
 					<Setter Property="Background" Value="#DFEFF4"></Setter>
@@ -46,9 +45,6 @@
 			<StackPanel HorizontalAlignment="Stretch" Orientation="Horizontal">
 				<TextBlock Margin="0,0,5,0">Status:</TextBlock>
 				<TextBlock Text="{Binding Status}"></TextBlock>
-				<TextBlock Text=" | Script: " IsVisible="{Binding ShowProgressBar}"></TextBlock>
-				<ProgressBar Minimum="0" Maximum="100" ShowProgressText="True" Background="{Binding BarColor}"
-							 IsVisible="{Binding ShowProgressBar}" Value="{Binding ScriptProgress}" Foreground="#6ADAFF"></ProgressBar>
 			</StackPanel>
 		</Border>
     </Grid>

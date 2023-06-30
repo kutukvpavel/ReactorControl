@@ -38,7 +38,7 @@ public partial class ControllerControl : UserControl
             return;
         }
 
-        RegisterViewWindow = new() { DataContext = vm };
+        RegisterViewWindow = new() { DataContext = new RegisterViewViewModel(vm) };
         RegisterViewWindow.Closed += Vw_Closed;
         RegisterViewWindow.Show();
     }

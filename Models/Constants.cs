@@ -48,6 +48,7 @@ namespace ReactorControl.Models
             ThermocouplesNum,
             InputLength,
             OutputLength,
+            AioNum,
 
             LEN
         }
@@ -56,7 +57,8 @@ namespace ReactorControl.Models
             PumpsNumName,
             ThermocouplesNumName,
             InputWordsName,
-            OutputWordsName
+            OutputWordsName,
+            AnalogInputNumName
         };
 
         public enum AnalogInputs

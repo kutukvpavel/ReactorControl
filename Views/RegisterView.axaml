@@ -30,7 +30,7 @@
 			<ItemsControl ItemsSource="{Binding InputRegisters}">
 				<ItemsControl.ItemTemplate>
 					<DataTemplate>
-						<local:RegisterEdit DataContext="{Binding Value}"></local:RegisterEdit>
+						<local:RegisterEdit DataContext="{Binding}"></local:RegisterEdit>
 					</DataTemplate>
 				</ItemsControl.ItemTemplate>
 			</ItemsControl>
@@ -40,7 +40,7 @@
 			<ItemsControl ItemsSource="{Binding HoldingRegisters}">
 				<ItemsControl.ItemTemplate>
 					<DataTemplate>
-						<local:RegisterEdit DataContext="{Binding Value}"></local:RegisterEdit>
+						<local:RegisterEdit DataContext="{Binding}"></local:RegisterEdit>
 					</DataTemplate>
 				</ItemsControl.ItemTemplate>
 			</ItemsControl>

@@ -66,7 +66,9 @@ public class ControllerControlViewModel : ViewModelBase
     public async Task Connect()
     {
         SetStatus("Connecting...");
-        SetStatus(await Instance.Connect(PortName) ? "Connected OK." : "Connection failed.");
+        bool success = await Instance.Connect(PortName);
+        SetStatus(success ? "Connected OK." : "Connection failed.");
+        await Instance.ReadAll();
     }
     public void Disconnect()
     {

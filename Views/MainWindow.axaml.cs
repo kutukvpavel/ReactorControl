@@ -3,6 +3,7 @@ using Avalonia.Interactivity;
 using MessageBox.Avalonia;
 using ReactorControl.ViewModels;
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Threading.Tasks;
 
@@ -21,6 +22,14 @@ public partial class MainWindow : Window
         btnConnectAll.Click += BtnConnectAll_Click;
         btnDisconnectAll.Click += BtnDisconnectAll_Click;
         btnRescanPorts.Click += BtnRescanPorts_Click;
+        Closing += MainWindow_Closing;
+    }
+
+    private async void MainWindow_Closing(object? sender, CancelEventArgs e)
+    {
+        ViewModel.SettingsContext.MainWindowWidth = Width;
+        ViewModel.SettingsContext.MainWindowHeight = Height;
+        await ViewModel.SaveSettings();
     }
 
     private void BtnRescanPorts_Click(object? sender, RoutedEventArgs e)
@@ -31,11 +40,11 @@ public partial class MainWindow : Window
         }
     }
 
-    private void BtnDisconnectAll_Click(object? sender, RoutedEventArgs e)
+    private async void BtnDisconnectAll_Click(object? sender, RoutedEventArgs e)
     {
         foreach (var item in ViewModel.Controllers)
         {
-            if (item.CanDisconnect) item.Disconnect();
+            if (item.CanDisconnect) await item.Disconnect();
         }
     }
 

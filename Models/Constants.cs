@@ -4,13 +4,24 @@ namespace ReactorControl.Models
 {
     public static class Constants
     {
+        public enum Modes : ushort
+        {
+            Init = 0,
+            Manual,
+            Auto,
+            Emergency,
+            LampTest,
+
+            NA = 0xFFFF
+        }
         [Flags]
         public enum InterfaceActivityBits : ushort
         {
             Receive = 1,
             Reload = 2,
             SaveNVS = 4,
-            Reboot = 8
+            Reboot = 8,
+            KeepAlive = 16
         }
         [Flags]
         public enum MotorStatusBits : ushort

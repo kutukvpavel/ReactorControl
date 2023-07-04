@@ -33,6 +33,8 @@ public class MainWindowViewModel : ViewModelBase
     public Settings SettingsContext { get; private set; }
     public bool IsAnyoneConnected => ModelInstances.Any(x => x.IsConnected);
     public bool AreAllConnected => ModelInstances.All(x => x.IsConnected);
+    public double Width => SettingsContext.MainWindowWidth;
+    public double Height => SettingsContext.MainWindowHeight;
 
     public async Task SaveSettings()
     {

@@ -10,7 +10,7 @@ namespace ReactorControl.Views
             InitializeComponent();
         }
 
-        public async void Remote_CheckedChanged(object? sender, RoutedEventArgs e)
+        public async void Remote_Click(object? sender, RoutedEventArgs e)
         {
             if (sender == null) return;
             if (DataContext == null) return;

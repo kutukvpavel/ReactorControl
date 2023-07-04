@@ -17,11 +17,13 @@ namespace ReactorControl.ViewModels
 
         private void MController_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            if (e.PropertyName != nameof(mController.IsConnected)) return;
-            Register = mController.RegisterMap.HoldingRegisters[Constants.InterfaceActivityName] as Register<DevUShort>;
-            if (Register == null) return;
-            Register.PropertyChanged += Register_PropertyChanged;
-            RaisePropertyChanged(nameof(IsEnabled));
+            if (e.PropertyName == nameof(mController.IsConnected)) 
+            {
+                Register = mController.RegisterMap.HoldingRegisters[Constants.InterfaceActivityName] as Register<DevUShort>;
+                if (Register == null) return;
+                Register.PropertyChanged += Register_PropertyChanged;
+                RaisePropertyChanged(nameof(IsEnabled));
+            }
             RaisePropertyChanged(nameof(IsReceiving));
         }
 
@@ -31,8 +33,7 @@ namespace ReactorControl.ViewModels
         }
 
         public Register<DevUShort>? Register { get; private set; }
-        public bool? IsReceiving => Register == null ? null :
-            ((Constants.InterfaceActivityBits)Register.TypedValue.Value).HasFlag(Constants.InterfaceActivityBits.Receive);
+        public bool IsReceiving => mController.IsRemoteEnabled;
         public bool IsEnabled => mController.IsConnected;
 
         protected DevUShort SetFlag(Constants.InterfaceActivityBits b, bool set = true)
@@ -48,10 +49,7 @@ namespace ReactorControl.ViewModels
         public async Task RemoteControl(bool receive)
         {
             if (Register == null) return;
-            await mController.WriteRegister(Constants.InterfaceActivityName, 
-                SetFlag(Constants.InterfaceActivityBits.Receive, receive));
-            await Task.Delay(200);
-            await mController.ReadRegister(Constants.InterfaceActivityName);
+            await mController.SetRemoteControl(receive);
         }
         public async Task ReloadParams()
         {

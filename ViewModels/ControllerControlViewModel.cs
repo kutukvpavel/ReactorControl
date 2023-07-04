@@ -34,12 +34,20 @@ public class ControllerControlViewModel : ViewModelBase
 
     private void Instance_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        RaisePropertyChanged(nameof(CanConnect));
-        RaisePropertyChanged(nameof(CanDisconnect));
-        RaisePropertyChanged(nameof(IsConnected));
-        RaisePropertyChanged(nameof(IsPolling));
+        if (e.PropertyName == nameof(Instance.IsConnected))
+        {
+            RaisePropertyChanged(nameof(CanConnect));
+            RaisePropertyChanged(nameof(CanDisconnect));
+            RaisePropertyChanged(nameof(IsConnected));
+        }
+        if (e.PropertyName == nameof(Instance.IsPolling)) RaisePropertyChanged(nameof(IsPolling));
+        if (e.PropertyName == nameof(Instance.Mode))
+        {
+            RaisePropertyChanged(nameof(ModeString));
+            RaisePropertyChanged(nameof(ModeColor));
+        }
 
-        if (e.PropertyName == nameof(Instance.TotalPumps)) return;
+        if (e.PropertyName != nameof(Instance.TotalPumps)) return;
         var p = new PumpControlViewModel[Instance.TotalPumps];
         for (int i = 0; i < p.Length; i++)
         {
@@ -61,6 +69,30 @@ public class ControllerControlViewModel : ViewModelBase
     public bool CanDisconnect => Instance.IsConnected;
     public string Status { get; set; } = "Not connected.";
     public string PortNameString => $"Port: {PortName}";
+    public string ModeString
+    {
+        get
+        {
+            return Instance.Mode switch
+            {
+                Constants.Modes.Init => "Init",
+                Constants.Modes.Manual => "Manual",
+                Constants.Modes.Auto => "Auto",
+                Constants.Modes.Emergency => "EMERGENCY",
+                Constants.Modes.LampTest => "Lamp Test",
+                _ => "N/A",
+            };
+        }
+    }
+    public IBrush ModeColor => Instance.Mode switch
+    {
+        Constants.Modes.Init => Brushes.LightBlue,
+        Constants.Modes.Manual => Brushes.Yellow,
+        Constants.Modes.Auto => Brushes.LightGreen,
+        Constants.Modes.Emergency => Brushes.LightCoral,
+        Constants.Modes.LampTest => Brushes.Magenta,
+        _ => Brushes.LightGray
+    };
 
     public string Name
     {
@@ -85,17 +117,17 @@ public class ControllerControlViewModel : ViewModelBase
     public async Task Connect()
     {
         SetStatus("Connecting...");
-        bool success = await Instance.Connect(PortName);
-        SetStatus(success ? "Connected OK." : "Connection failed.");
+        await Instance.Connect(PortName);
+        SetStatus("Ready.");
         await Instance.ReadAll();
     }
     public void UpdatePort()
     {
         RaisePropertyChanged(nameof(CanConnect));
     }
-    public void Disconnect()
+    public async Task Disconnect()
     {
-        SetStatus(Instance.Disconnect() ? "Disconnected OK." : "Diconnect failed.");
+        SetStatus((await Instance.Disconnect()) ? "Disconnected OK." : "Diconnect failed.");
     }
     public void SetStatus(string s)
     {

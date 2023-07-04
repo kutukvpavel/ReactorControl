@@ -34,7 +34,49 @@ namespace ReactorControl.Models
         protected readonly ModbusFactory Factory = new();
         protected readonly Timer PollTimer;
         protected bool _IsConnected = false;
+        protected readonly Timer KeepAliveTimer;
 
+        private void KeepAliveTimer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
+        {
+            IDisposable? l = null;
+            try
+            {
+                if (!IsRemoteEnabled) KeepAliveTimer.Stop();
+                if (Master == null) throw new InvalidOperationException("Connection to the controller doesn't exist.");
+
+                l = LockObject.Lock();
+                var tr = ReadRegister(Constants.InterfaceActivityName);
+                tr.Wait();
+                if (!tr.IsCompletedSuccessfully) throw tr.Exception ?? new AggregateException("Keep alive read");
+                if (((Constants.InterfaceActivityBits)(ushort)(DevUShort)tr.Result)
+                    .HasFlag(Constants.InterfaceActivityBits.Receive))
+                {
+                    var tw = WriteRegister(Constants.InterfaceActivityName, 
+                        SetFlag((ushort)(DevUShort)tr.Result, Constants.InterfaceActivityBits.KeepAlive));
+                    tw.Wait();
+                    if (!tw.IsCompletedSuccessfully) throw tw.Exception ?? new AggregateException("Keep alive write");
+                }
+                else
+                {
+                    //Remote rejected
+                    KeepAliveTimer.Stop();
+                    OnPropertyChanged(nameof(IsRemoteEnabled));
+                    new Thread(() =>
+                    {
+                        RemoteRejected?.Invoke(this, new EventArgs());
+                    }).Start();
+                }
+            }
+            catch (Exception ex)
+            {
+                Log(ex, "Keep alive task error");
+                OnUnexpectedDisconnect();
+            }
+            finally
+            {
+                l?.Dispose();
+            }
+        }
         private void PollTimer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
         {
             try
@@ -62,6 +104,11 @@ namespace ReactorControl.Models
 
             }
         }
+        private void StatusReg_Changed(object? sender, PropertyChangedEventArgs e)
+        {
+            OnPropertyChanged(nameof(Mode));
+        }
+
         protected async Task<bool> InitRegisterMap()
         {
             try
@@ -116,10 +163,12 @@ namespace ReactorControl.Models
                 RegisterMap.AddHolding<DevMotorParams>(Constants.MotorParamsBaseName, pumpsTotal);
                 RegisterMap.AddInput<DevMotorReg>(Constants.MotorRegistersBaseName, pumpsTotal, poll: true);
                 RegisterMap.AddHolding<DevFloat>(Constants.CommandedSpeedBaseName, pumpsTotal);
+
+                ((IRegister)RegisterMap.InputRegisters[Constants.StatusRegisterName]).PropertyChanged += StatusReg_Changed;
             }
             catch (TimeoutException)
             {
-                throw; //Allow Connect() to differentiate faults
+                throw; //Allow Connect() to differentiate faults`
             }
             catch (Exception ex)
             {
@@ -127,6 +176,13 @@ namespace ReactorControl.Models
                 return false;
             }
             return true;
+        }
+        protected DevUShort SetFlag(ushort v, Constants.InterfaceActivityBits b, bool set = true)
+        {
+            v &= (ushort)Constants.InterfaceActivityBits.Receive; //Remove any single-shot bits still not cleared
+            if (set) v |= (ushort)b;
+            else v &= (ushort)(~(ushort)b);
+            return (DevUShort)v;
         }
 
         #endregion
@@ -136,12 +192,18 @@ namespace ReactorControl.Models
             if (cfg.ConnectionType != ConnectionTypes.Serial) throw new NotImplementedException();
             Config = cfg;
             Port = new SerialPortStream(cfg.PortName);
-            PollTimer = new Timer(1000)
+            PollTimer = new Timer(PollInterval)
             {
                 AutoReset = true,
                 Enabled = false
             };
             PollTimer.Elapsed += PollTimer_Elapsed;
+            KeepAliveTimer = new Timer(KeepAliveInterval)
+            {
+                AutoReset = true,
+                Enabled = false
+            };
+            KeepAliveTimer.Elapsed += KeepAliveTimer_Elapsed;
         }
         public void Dispose()
         {
@@ -155,6 +217,7 @@ namespace ReactorControl.Models
         public event PropertyChangedEventHandler? PropertyChanged;
         public event EventHandler? UnexpectedDisconnect;
         public event EventHandler<PollResult>? PollCompleted;
+        public event EventHandler? RemoteRejected;
 
         public class DataErrorEventArgs : EventArgs
         {
@@ -202,8 +265,9 @@ namespace ReactorControl.Models
 
         #region Props
 
-        public static int ConnectionTimeout { get; set; } = 1000; //mS
-
+        public static int ConnectionTimeout { get; set; } = 500; //mS
+        public static int PollInterval {get;set;} = 500; //mS
+        public static int KeepAliveInterval {get;set;} = 1000; //mS
 
         public ControllerConfig Config { get; }
         public SerialPortStream Port { get; private set; }
@@ -220,6 +284,33 @@ namespace ReactorControl.Models
         public Map RegisterMap { get; } = new Map();
         public int TotalPumps => IsConnected ? RegisterMap.GetInputWord(Constants.PumpsNumName) : 0;
         public bool IsPolling => PollTimer.Enabled;
+        public bool IsRemoteEnabled {
+            get {
+                try
+                {
+                    return ((Constants.InterfaceActivityBits)RegisterMap.GetHoldingWord(Constants.InterfaceActivityName))
+                        .HasFlag(Constants.InterfaceActivityBits.Receive);
+                }
+                catch (ArgumentException)
+                {
+                    return false;
+                }
+            }
+        }
+        public Constants.Modes Mode 
+        {
+            get
+            {
+                try
+                {
+                    return (Constants.Modes)RegisterMap.GetInputWord(Constants.StatusRegisterName);
+                }
+                catch (ArgumentException)
+                {
+                    return Constants.Modes.NA;
+                }
+            }
+        }
 
         #endregion
 
@@ -427,6 +518,26 @@ namespace ReactorControl.Models
         {
             PollTimer.Enabled = enable;
             OnPropertyChanged(nameof(IsPolling));
+        }
+        public async Task SetRemoteControl(bool enable)
+        {
+            DevUShort data = SetFlag(RegisterMap.GetHoldingWord(Constants.InterfaceActivityName), 
+                Constants.InterfaceActivityBits.Receive, enable);
+            using (await LockObject.LockAsync())
+            {
+                await WriteRegister(Constants.InterfaceActivityName, data);
+                await Task.Delay(200);
+                await ReadRegister(Constants.InterfaceActivityName);
+            }
+            if (enable && !IsRemoteEnabled)
+            {
+                RemoteRejected?.Invoke(this, new EventArgs());
+            }
+            else
+            {
+                KeepAliveTimer.Enabled = enable;
+            }
+            OnPropertyChanged(nameof(IsRemoteEnabled));
         }
         #endregion
 

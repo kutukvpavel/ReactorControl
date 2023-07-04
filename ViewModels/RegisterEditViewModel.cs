@@ -24,7 +24,8 @@ public class RegisterEditViewModel : ViewModelBase, INotifyDataErrorInfo
 
     private void MRegister_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        RaisePropertyChanged();
+        if (IsComplex) return;
+        RaisePropertyChanged(nameof(TextboxValue));
     }
 
     private readonly Controller mController;
@@ -57,7 +58,7 @@ public class RegisterEditViewModel : ViewModelBase, INotifyDataErrorInfo
         string pn = nameof(TextboxValue);
         try
         {
-            mRegister.Value.Set(mWriteTxt);
+            mRegister.Value.TrySet(mWriteTxt);
             success = true;
         }
         catch (FormatException)
@@ -84,30 +85,32 @@ public class RegisterEditViewModel : ViewModelBase, INotifyDataErrorInfo
     }
     public async Task Write()
     {
-        if (!TrySet()) return;
-
-        string pn = nameof(TextboxValue);
-        bool success = false;
-        try
+        if (TrySet())
         {
-            await mController.WriteRegister(mRegister);
-            success = true;
+            string pn = nameof(TextboxValue);
+            bool success = false;
+            try
+            {
+                await mController.WriteRegister(mRegister);
+                success = true;
+            }
+            catch (TimeoutException)
+            {
+                if (!Errors.ContainsKey(pn)) Errors.Add(pn, string.Empty);
+                Errors[pn] = "Write timeout";
+            }
+            catch (Exception ex)
+            {
+                if (!Errors.ContainsKey(pn)) Errors.Add(pn, string.Empty);
+                Errors[pn] = ex.GetType().Name;
+            }
+            if (success)
+            {
+                if (Errors.ContainsKey(pn)) Errors.Remove(pn);
+            }
+            ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(nameof(TextboxValue)));
         }
-        catch (TimeoutException)
-        {
-            if (!Errors.ContainsKey(pn)) Errors.Add(pn, string.Empty);
-            Errors[pn] = "Write timeout";
-        }
-        catch (Exception ex)
-        {
-            if (!Errors.ContainsKey(pn)) Errors.Add(pn, string.Empty);
-            Errors[pn] = ex.GetType().Name;
-        }
-        if (success)
-        {
-            if (Errors.ContainsKey(pn)) Errors.Remove(pn);
-        }
-        ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(nameof(TextboxValue)));
+        await mController.ReadRegister(mRegister);
     }
 
     private static string[] UnknownError { get; } = { "Unknown error" };

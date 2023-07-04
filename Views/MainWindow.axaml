@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         x:Class="ReactorControl.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        Icon="/Assets/avalonia-logo.ico" Width="800" Height="700"
+        Icon="/Assets/avalonia-logo.ico" Width="{Binding Width, Mode=OneTime}" Height="{Binding Height, Mode=OneTime}"
         Title="ReactorControl" MinWidth="800" MinHeight="600">
 
     <Grid ColumnDefinitions="*" RowDefinitions="auto, *, auto">

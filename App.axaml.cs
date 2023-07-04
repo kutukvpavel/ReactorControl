@@ -55,6 +55,8 @@ public partial class App : Application
             vm.LoadRequest += Vm_LoadRequest;
             vm.SaveRequest += Vm_SaveRequest;
             vm.LogDataReceived += Vm_LogDataReceived;
+            vm.SettingsSaveRequested += Vm_SettingsSaveRequested;
+            vm.SettingsLoadRequested += Vm_SettingsLoadRequested;
             desktop.MainWindow = new MainWindow
             {
                 DataContext = vm,
@@ -77,7 +79,14 @@ public partial class App : Application
             LogError(msg, e.Exception);
         }
     }
-
+    private void Vm_SettingsSaveRequested(object? sender, EventArgs e)
+    {
+        SaveSettings();
+    }
+    private void Vm_SettingsLoadRequested(object? sender, EventArgs e)
+    {
+        LoadSettings();
+    }
     private void Vm_SaveRequest(object? sender, EventArgs e)
     {
         SaveDevices();
@@ -133,6 +142,9 @@ public partial class App : Application
             }
             Settings = Settings.Deserialize(File.ReadAllText(p));
             (MainWindow?.DataContext as MainWindowViewModel)?.UpdateSettingsContext(Settings);
+            Controller.ConnectionTimeout = Settings.ConnectionTimeout;
+            Controller.PollInterval = Settings.PollInterval;
+            Controller.KeepAliveInterval = Settings.KeepAliveInterval;
             Log($"Settings file loaded from '{p}'");
         }
         catch (Exception ex)

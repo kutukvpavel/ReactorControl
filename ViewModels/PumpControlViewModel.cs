@@ -24,12 +24,16 @@ namespace ReactorControl.ViewModels
                 as Register<DevMotorParams>;
             CommandedSpeedRegister = mController.RegisterMap.HoldingRegisters[Constants.CommandedSpeedBaseName + Index.ToString()]
                 as Register<DevFloat>;
-
+            mController.PropertyChanged += Controller_PropertyChanged;
             if (MotorReg != null) MotorReg.PropertyChanged += MotorReg_PropertyChanged;
             if (MotorParams != null) MotorParams.PropertyChanged += MotorParams_PropertyChanged;
             if (CommandedSpeedRegister != null) CommandedSpeedRegister.PropertyChanged += CommandedSpeedRegister_PropertyChanged;
         }
 
+        private void Controller_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(mController.IsRemoteEnabled)) RaisePropertyChanged(nameof(CanEdit));
+        }
         private void CommandedSpeedRegister_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             RaisePropertyChanged(nameof(CommandedSpeed));
@@ -61,7 +65,7 @@ namespace ReactorControl.ViewModels
             ?? NotAvailable;
         public string? CommandedSpeed => CommandedSpeedRegister?.TypedValue.Value
             .ToString(SpeedNumberFormat, CultureInfo.CurrentUICulture) ?? NotAvailable;
-        public bool CanEdit => CommandedSpeedRegister != null && MotorReg != null;
+        public bool CanEdit => CommandedSpeedRegister != null && MotorReg != null && mController.IsRemoteEnabled;
         public string? Load => MotorReg == null ? NotAvailable :
             (MotorReg.TypedValue.Error.Value * 100).ToString("F0", CultureInfo.CurrentUICulture);
         public string StatusString
@@ -94,8 +98,9 @@ namespace ReactorControl.ViewModels
             if (CommandedSpeedRegister == null || MotorReg == null) return;
             CommandedSpeedRegister.TypedValue.Value = v; //Commanded registers are not polled, no concurrency expected
             await mController.WriteRegister(CommandedSpeedRegister);
-            if (mController.IsPolling) return;
             await Task.Delay(100);
+            await mController.ReadRegister(CommandedSpeedRegister);
+            if (mController.IsPolling) return;
             await mController.ReadRegister(MotorReg);
         }
     }

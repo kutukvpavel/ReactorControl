@@ -31,7 +31,6 @@ public partial class ControllerControl : UserControl
     {
         bool b = chkPoll.IsChecked ?? false;
         ViewModel?.Instance.SetAutoPoll(b);
-        ViewModel?.SetStatus($"Polling is {(b ? "ON" : "OFF")}.");
     }
     private void BtnDisconnect_Click(object? sender, RoutedEventArgs e)
     {

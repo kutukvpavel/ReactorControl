@@ -20,6 +20,7 @@ public partial class RegisterEdit : UserControl
         var tb = sender as TextBox;
         if (tb?.Text == null || vm == null) return;
         if (tb.IsReadOnly) return;
+        if (e.Key == Key.Delete || e.Key == Key.Back || e.Key == Key.Space) return;
 
         vm.TextboxValue = tb.Text.Trim();
         if (e.Key == Key.Enter)
@@ -43,7 +44,9 @@ public partial class RegisterEdit : UserControl
     {
         if (sender is not Button) return;
         if (DataContext is not RegisterEditViewModel vm) return;
+        if (mtbInput.Text == null) return;
 
+        vm.TextboxValue = mtbInput.Text.Trim();
         await vm.Write();
     }
     public async void Edit_Click(object? sender, RoutedEventArgs e)

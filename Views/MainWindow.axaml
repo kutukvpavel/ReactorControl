@@ -4,21 +4,23 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 		xmlns:local="clr-namespace:ReactorControl.Views;assembly=ReactorControl"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        mc:Ignorable="d"
         x:Class="ReactorControl.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        Icon="/Assets/avalonia-logo.ico"
-        Title="ReactorControl">
+        Icon="/Assets/avalonia-logo.ico" Width="800" Height="700"
+        Title="ReactorControl" MinWidth="800" MinHeight="600">
 
     <Grid ColumnDefinitions="*" RowDefinitions="auto, *, auto">
 		<Menu Grid.Column="0" Grid.Row="0">
 			<MenuItem Header="Devices">
-				<MenuItem Header="Connect All" x:Name="btnConnectAll"></MenuItem>
-				<MenuItem Header="Disconnect All" x:Name="btnDisconnectAll"></MenuItem>
+				<MenuItem Header="Connect All" x:Name="btnConnectAll" IsEnabled="{Binding !AreAllConnected}"></MenuItem>
+				<MenuItem Header="Disconnect All" x:Name="btnDisconnectAll" IsEnabled="{Binding IsAnyoneConnected}"></MenuItem>
+				<Separator></Separator>
+				<MenuItem Header="Rescan Ports" x:Name="btnRescanPorts"></MenuItem>
 			</MenuItem>
 			<MenuItem Header="Configuration">
 				<MenuItem Header="Settings" x:Name="btnSettings"></MenuItem>
-				<MenuItem Header="Add/Remove Devices" Click="AddRemove_Click"></MenuItem>
+				<MenuItem Header="Add/Remove Devices" Click="AddRemove_Click" IsEnabled="{Binding !IsAnyoneConnected}"></MenuItem>
 			</MenuItem>
 			<MenuItem Header="Help">
 				<MenuItem Header="Project Repository" x:Name="btnProjectRepo"></MenuItem>

@@ -24,12 +24,15 @@ public class MainWindowViewModel : ViewModelBase
         foreach (var item in Controllers)
         {
             item.LogDataReceived += Item_LogDataReceived;
+            item.PropertyChanged += Item_PropertyChanged;
         }
     }
 
     public ObservableCollection<Controller> ModelInstances { get; }
     public ObservableCollection<ControllerControlViewModel> Controllers { get; }
     public Settings SettingsContext { get; private set; }
+    public bool IsAnyoneConnected => ModelInstances.Any(x => x.IsConnected);
+    public bool AreAllConnected => ModelInstances.All(x => x.IsConnected);
 
     public async Task SaveSettings()
     {
@@ -52,6 +55,7 @@ public class MainWindowViewModel : ViewModelBase
         foreach (var item in Controllers)
         {
             item.LogDataReceived -= Item_LogDataReceived;
+            item.PropertyChanged -= Item_PropertyChanged;
         }
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
@@ -61,6 +65,7 @@ public class MainWindowViewModel : ViewModelBase
         foreach (var item in Controllers)
         {
             item.LogDataReceived += Item_LogDataReceived;
+            item.PropertyChanged += Item_PropertyChanged;
         }
     }
     public void UpdateSettingsContext(Settings s)
@@ -72,5 +77,14 @@ public class MainWindowViewModel : ViewModelBase
     private void Item_LogDataReceived(object? sender, LogEventArgs e)
     {
         Log(sender, e);
+    }
+    private void Item_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        ControllerControlViewModel? vm;
+        if (e.PropertyName == nameof(vm.IsConnected))
+        {
+            RaisePropertyChanged(nameof(IsAnyoneConnected));
+            RaisePropertyChanged(nameof(AreAllConnected));
+        }
     }
 }

@@ -14,8 +14,9 @@ public class RegisterEditViewModel : ViewModelBase, INotifyDataErrorInfo
 {
     public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
 
-    public RegisterEditViewModel(Controller c, IRegister r)
+    public RegisterEditViewModel(Controller c, IRegister r, Window owner)
     {
+        Owner = owner;
         mRegister = r;
         mController = c;
         mRegister.PropertyChanged += MRegister_PropertyChanged;
@@ -30,6 +31,7 @@ public class RegisterEditViewModel : ViewModelBase, INotifyDataErrorInfo
     private readonly IRegister mRegister;
     private string? mWriteTxt = null;
 
+    public Window Owner { get; }
     public bool IsComplex => mRegister.Value is ComplexDevTypeBase;
     public string Name { get => mRegister.Name; }
     public string? TextboxValue
@@ -125,6 +127,7 @@ public class RegisterEditViewModel : ViewModelBase, INotifyDataErrorInfo
 
     public async Task Edit(Window owner)
     {
+        await mController.ReadRegister(mRegister);
         var dialog = new ComplexRegisterEdit() { DataContext = mRegister };
         await dialog.ShowDialog(owner);
         if (!dialog.Result)

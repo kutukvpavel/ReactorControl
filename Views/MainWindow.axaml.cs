@@ -20,6 +20,15 @@ public partial class MainWindow : Window
         btnSettings.Click += BtnSettings_Click;
         btnConnectAll.Click += BtnConnectAll_Click;
         btnDisconnectAll.Click += BtnDisconnectAll_Click;
+        btnRescanPorts.Click += BtnRescanPorts_Click;
+    }
+
+    private void BtnRescanPorts_Click(object? sender, RoutedEventArgs e)
+    {
+        foreach (var item in ViewModel.Controllers)
+        {
+            item.UpdatePort();
+        }
     }
 
     private void BtnDisconnectAll_Click(object? sender, RoutedEventArgs e)

@@ -12,9 +12,10 @@
 		</Style>
 	</UserControl.Styles>
 	<StackPanel>
-		<CheckBox Margin="5,0" IsChecked="{Binding IsReceiving}" Checked="Remote_Checked">Remote Control</CheckBox>
-		<Button Background="LightGreen" Click="Reload_Click">Reload Params</Button>
-		<Button Background="LightBlue" Click="Save_Click">Save NVS</Button>
-		<Button Background="LightCoral" Click="Reboot_Click">Reboot</Button>
+		<CheckBox Margin="5,0" IsChecked="{Binding IsReceiving}" Checked="Remote_CheckedChanged"
+				  IsEnabled="{Binding IsEnabled}">Remote Control</CheckBox>
+		<Button Background="LightGreen" Click="Reload_Click" IsEnabled="{Binding IsEnabled}">Reload Params</Button>
+		<Button Background="LightBlue" Click="Save_Click" IsEnabled="{Binding IsEnabled}">Save NVS</Button>
+		<Button Background="LightCoral" Click="Reboot_Click" IsEnabled="{Binding IsEnabled}">Reboot</Button>
 	</StackPanel>
 </UserControl>

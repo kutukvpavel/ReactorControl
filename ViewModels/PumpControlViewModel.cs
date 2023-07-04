@@ -18,12 +18,34 @@ namespace ReactorControl.ViewModels
         {
             mController = c;
             Index = index;
-            MotorReg = mController.RegisterMap.HoldingRegisters[Constants.MotorRegistersBaseName + Index.ToString()]
+            MotorReg = mController.RegisterMap.InputRegisters[Constants.MotorRegistersBaseName + Index.ToString()]
                 as Register<DevMotorReg>;
             MotorParams = mController.RegisterMap.HoldingRegisters[Constants.MotorParamsBaseName + Index.ToString()]
                 as Register<DevMotorParams>;
             CommandedSpeedRegister = mController.RegisterMap.HoldingRegisters[Constants.CommandedSpeedBaseName + Index.ToString()]
                 as Register<DevFloat>;
+
+            if (MotorReg != null) MotorReg.PropertyChanged += MotorReg_PropertyChanged;
+            if (MotorParams != null) MotorParams.PropertyChanged += MotorParams_PropertyChanged;
+            if (CommandedSpeedRegister != null) CommandedSpeedRegister.PropertyChanged += CommandedSpeedRegister_PropertyChanged;
+        }
+
+        private void CommandedSpeedRegister_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            RaisePropertyChanged(nameof(CommandedSpeed));
+        }
+        private void MotorParams_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            
+        }
+        private void MotorReg_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            RaisePropertyChanged(nameof(MotorStatus));
+            RaisePropertyChanged(nameof(VolumeRate));
+            RaisePropertyChanged(nameof(RotationSpeed));
+            RaisePropertyChanged(nameof(Load));
+            RaisePropertyChanged(nameof(StatusString));
+            RaisePropertyChanged(nameof(StatusColor));
         }
 
         public int Index { get; }
@@ -34,8 +56,9 @@ namespace ReactorControl.ViewModels
         public Register<DevFloat>? CommandedSpeedRegister { get; }
         public Constants.MotorStatusBits? MotorStatus => (Constants.MotorStatusBits?)MotorReg?.TypedValue.Status.Value;
         public string? VolumeRate => MotorReg?.TypedValue.VolumeRate.Value
-            .ToString(SpeedNumberFormat, CultureInfo.CurrentUICulture);
-        public string? RotationSpeed => MotorReg?.TypedValue.RPS.Value.ToString("F4", CultureInfo.CurrentUICulture);
+            .ToString(SpeedNumberFormat, CultureInfo.CurrentUICulture) ?? NotAvailable;
+        public string? RotationSpeed => MotorReg?.TypedValue.RPS.Value.ToString("F4", CultureInfo.CurrentUICulture)
+            ?? NotAvailable;
         public string? CommandedSpeed => CommandedSpeedRegister?.TypedValue.Value
             .ToString(SpeedNumberFormat, CultureInfo.CurrentUICulture) ?? NotAvailable;
         public bool CanEdit => CommandedSpeedRegister != null && MotorReg != null;
@@ -49,7 +72,8 @@ namespace ReactorControl.ViewModels
                 if (MotorStatus.Value.HasFlag(Constants.MotorStatusBits.Missing)) return "Missing!";
                 if (MotorStatus.Value.HasFlag(Constants.MotorStatusBits.Overload)) return "Overload!";
                 if (MotorStatus.Value.HasFlag(Constants.MotorStatusBits.Paused)) return "Paused";
-                return "OK";
+                if (MotorStatus.Value.HasFlag(Constants.MotorStatusBits.Running)) return "Running";
+                return "N/A";
             }
         }
         public IBrush StatusColor
@@ -60,7 +84,8 @@ namespace ReactorControl.ViewModels
                 if (MotorStatus.Value.HasFlag(Constants.MotorStatusBits.Missing)) return Brushes.LightSalmon;
                 if (MotorStatus.Value.HasFlag(Constants.MotorStatusBits.Overload)) return Brushes.LightCoral;
                 if (MotorStatus.Value.HasFlag(Constants.MotorStatusBits.Paused)) return Brushes.LightBlue;
-                return Brushes.LightGreen;
+                if (MotorStatus.Value.HasFlag(Constants.MotorStatusBits.Running)) return Brushes.LightGreen;
+                return Brushes.LightGray;
             }
         }
 

@@ -51,6 +51,6 @@ public partial class RegisterEdit : UserControl
         if (sender is not Button) return;
         if (DataContext is not RegisterEditViewModel vm) return;
 
-        await vm.Edit((App.Current as App).MainWindow);
+        await vm.Edit(vm.Owner);
     }
 }

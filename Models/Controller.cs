@@ -10,6 +10,7 @@ using Nito.AsyncEx;
 
 using Timer = System.Timers.Timer;
 using System.Collections;
+using System.IO;
 
 namespace ReactorControl.Models
 {
@@ -36,18 +37,21 @@ namespace ReactorControl.Models
 
         private void PollTimer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
         {
-            if (!Monitor.TryEnter(LockObject)) return;
             try
             {
                 var task = Poll();
                 task.Wait();
-                if (task.IsCompletedSuccessfully)
+                if (task.IsCompletedSuccessfully && IsConnected)
                 {
                     new Thread(() =>
                     {
                         PollCompleted?.Invoke(this, task.Result);
                     }).Start();
                 }
+            }
+            catch (IOException)
+            {
+                OnUnexpectedDisconnect();
             }
             catch (TimeoutException)
             {
@@ -56,10 +60,6 @@ namespace ReactorControl.Models
             catch (Exception)
             {
 
-            }
-            finally
-            {
-                Monitor.Exit(LockObject);
             }
         }
         protected async Task<bool> InitRegisterMap()
@@ -102,19 +102,19 @@ namespace ReactorControl.Models
                 else if (analogTotal < (int)Constants.AnalogInputs.LEN)
                     throw new Exception("Detected less analog inputs then defined for this version of software. Cannot continue.");
 
-                RegisterMap.AddInput<DevUShort>(Constants.StatusRegisterName, 1, true);
-                RegisterMap.AddHolding<DevUShort>(Constants.InterfaceActivityName, 1, true);
+                RegisterMap.AddInput<DevUShort>(Constants.StatusRegisterName, 1, poll: true);
+                RegisterMap.AddHolding<DevUShort>(Constants.InterfaceActivityName, 1, poll: true);
                 RegisterMap.AddHolding<DevUShort>(Constants.ModbusAddrName, 1);
-                RegisterMap.AddInput<DevFloat>(Constants.ThermocoupleBaseName, thermoTotal, true);
-                RegisterMap.AddInput<DevFloat>(Constants.AnalogInputBaseName, analogTotal, true);
+                RegisterMap.AddInput<DevFloat>(Constants.ThermocoupleBaseName, thermoTotal, poll: true);
+                RegisterMap.AddInput<DevFloat>(Constants.AnalogInputBaseName, analogTotal, poll: true);
                 RegisterMap.AddHolding<AioCal>(Constants.AnalogCalBaseName, analogTotal);
-                RegisterMap.AddInput<DevUShort>(Constants.InputsRegisterBaseName, inputWords, true);
-                RegisterMap.AddInput<DevUShort>(Constants.OutputsRegisterBaseName, outputWords, true);
+                RegisterMap.AddInput<DevUShort>(Constants.InputsRegisterBaseName, inputWords, poll: true);
+                RegisterMap.AddInput<DevUShort>(Constants.OutputsRegisterBaseName, outputWords, poll: true);
                 RegisterMap.AddHolding<DevUShort>(Constants.CommandedOutputsBaseName, outputWords);
                 RegisterMap.AddHolding<DevUShort>("reserved1", 1);
                 RegisterMap.AddHolding<DevPumpParams>(Constants.PumpParamsName, 1);
                 RegisterMap.AddHolding<DevMotorParams>(Constants.MotorParamsBaseName, pumpsTotal);
-                RegisterMap.AddInput<DevMotorReg>(Constants.MotorRegistersBaseName, pumpsTotal, true);
+                RegisterMap.AddInput<DevMotorReg>(Constants.MotorRegistersBaseName, pumpsTotal, poll: true);
                 RegisterMap.AddHolding<DevFloat>(Constants.CommandedSpeedBaseName, pumpsTotal);
             }
             catch (TimeoutException)
@@ -187,7 +187,14 @@ namespace ReactorControl.Models
         }
         private void OnUnexpectedDisconnect()
         {
-            _IsConnected = false;
+            try
+            {
+                Disconnect();
+            }
+            catch (Exception ex)
+            {
+                Log(ex, "Unexpected disconnect");
+            }
             OnPropertyChanged();
             new Thread(() => { UnexpectedDisconnect?.Invoke(this, new EventArgs()); }).Start();
         }
@@ -265,18 +272,26 @@ namespace ReactorControl.Models
             }
             return false;
         }
-        public bool Disconnect()
+        public async Task<bool> Disconnect()
         {
-            IsConnected = false;
-            try
+            if (IsPolling)
             {
-                Port.Close();
+                PollTimer.Enabled = false;
+                OnPropertyChanged(nameof(IsPolling));
             }
-            catch (Exception e)
+            using (await LockObject.LockAsync())
             {
-                Log(e, "Failed to close the port!");
+                IsConnected = false;
+                try
+                {
+                    Port.Close();
+                }
+                catch (Exception e)
+                {
+                    Log(e, "Failed to close the port!");
+                }
+                return !Port.IsOpen;
             }
-            return !Port.IsOpen;
         }
         public async Task<IDeviceType> ReadRegister(string name)
         {
@@ -285,14 +300,12 @@ namespace ReactorControl.Models
             IRegister? reg = RegisterMap.HoldingRegisters[name] as IRegister;
             if (reg != null)
             {
-                reg.Set(await Master.ReadHoldingRegistersAsync(Config.ModbusAddress, reg.Address, reg.Length));
-                return reg.Value;
+                return (IDeviceType)(await ReadRegister(reg));
             }
             reg = RegisterMap.InputRegisters[name] as IRegister;
             if (reg != null)
             {
-                reg.Set(await Master.ReadHoldingRegistersAsync(Config.ModbusAddress, reg.Address, reg.Length));
-                return reg.Value;
+                return (IDeviceType)(await ReadRegister(reg));
             }
             throw new ArgumentException($"Unable to find register '{name}'");
         }
@@ -304,21 +317,44 @@ namespace ReactorControl.Models
         {
             if (Master == null) throw new Exception("Controller connection does not exist.");
 
-            reg.Set(await Master.ReadHoldingRegistersAsync(Config.ModbusAddress, reg.Address, reg.Length));
-            return reg.TypedValue;
+            return (T)(await ReadRegister((IRegister)reg));
         }
         public async Task<object> ReadRegister(IRegister reg)
         {
             if (Master == null) throw new Exception("Controller connection does not exist.");
 
-            reg.Set(await Master.ReadHoldingRegistersAsync(Config.ModbusAddress, reg.Address, reg.Length));
-            return reg.Value;
+            try
+            {
+                reg.Set(await Master.ReadHoldingRegistersAsync(Config.ModbusAddress, reg.Address, reg.Length));
+                return reg.Value;
+            }
+            catch (Exception ex)
+            {
+                object res = reg.Value;
+                Log(ex, "Unexpected error during register read, disconnecting");
+                OnUnexpectedDisconnect();
+                return res;
+            }
         }
-        public async Task WriteRegister(IRegister? reg)
+        public async Task WriteRegister(IRegister? reg, IDeviceType value)
         {
             if (Master == null) throw new Exception("Controller connection does not exist.");
             if (reg == null) throw new ArgumentException("Register can't be null");
-            await Master.WriteMultipleRegistersAsync(Config.ModbusAddress, reg.Address, reg.Value.GetWords());
+
+            try
+            {
+                await Master.WriteMultipleRegistersAsync(Config.ModbusAddress, reg.Address, value.GetWords());
+            }
+            catch (Exception ex)
+            {
+                Log(ex, "Unexpected register write error");
+                OnUnexpectedDisconnect();
+            }
+        }
+        public async Task WriteRegister(IRegister? reg)
+        {
+            if (reg == null) throw new ArgumentException("Register can't be null");
+            await WriteRegister(reg, reg.Value);
         }
         public async Task WriteRegister(string name)
         {
@@ -327,11 +363,10 @@ namespace ReactorControl.Models
         }
         public async Task WriteRegister(string name, IDeviceType value)
         {
-            if (Master == null) throw new Exception("Controller connection does not exist.");
             if (RegisterMap.HoldingRegisters[name] is not IRegister reg)
                 throw new ArgumentException($"Unknown register: {name}");
 
-            await Master.WriteMultipleRegistersAsync(Config.ModbusAddress, reg.Address, value.GetWords());
+            await WriteRegister(reg, value);
         }
         public async Task<PollResult> Poll()
         {
@@ -367,17 +402,26 @@ namespace ReactorControl.Models
         public async Task ReadAll()
         {
             if (Master == null) throw new Exception("Controller connection does not exist.");
-            foreach (DictionaryEntry item in RegisterMap.InputRegisters)
+
+            try
             {
-                var reg = (item.Value as IRegister);
-                if (reg == null) continue;
-                reg.Set(await Master.ReadHoldingRegistersAsync(Config.ModbusAddress, reg.Address, reg.Length));
+                foreach (DictionaryEntry item in RegisterMap.InputRegisters)
+                {
+                    var reg = (item.Value as IRegister);
+                    if (reg == null) continue;
+                    reg.Set(await Master.ReadHoldingRegistersAsync(Config.ModbusAddress, reg.Address, reg.Length));
+                }
+                foreach (DictionaryEntry item in RegisterMap.HoldingRegisters)
+                {
+                    var reg = (item.Value as IRegister);
+                    if (reg == null) continue;
+                    reg.Set(await Master.ReadHoldingRegistersAsync(Config.ModbusAddress, reg.Address, reg.Length));
+                }
             }
-            foreach (DictionaryEntry item in RegisterMap.HoldingRegisters)
+            catch (Exception ex)
             {
-                var reg = (item.Value as IRegister);
-                if (reg == null) continue;
-                reg.Set(await Master.ReadHoldingRegistersAsync(Config.ModbusAddress, reg.Address, reg.Length));
+                Log(ex, "Failed to update all registers");
+                OnUnexpectedDisconnect();
             }
         }
         public void SetAutoPoll(bool enable)

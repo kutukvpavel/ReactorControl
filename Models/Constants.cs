@@ -17,7 +17,8 @@ namespace ReactorControl.Models
         {
             Missing = 1,
             Overload = 2,
-            Paused = 4
+            Paused = 4,
+            Running = 8
         }
 
         //Config

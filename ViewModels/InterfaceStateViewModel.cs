@@ -12,9 +12,17 @@ namespace ReactorControl.ViewModels
         public InterfaceStateViewModel(Controller c)
         {
             mController = c;
-            Register = c.RegisterMap.HoldingRegisters[Constants.InterfaceActivityName] as Register<DevUShort>;
+            mController.PropertyChanged += MController_PropertyChanged;
+        }
+
+        private void MController_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName != nameof(mController.IsConnected)) return;
+            Register = mController.RegisterMap.HoldingRegisters[Constants.InterfaceActivityName] as Register<DevUShort>;
             if (Register == null) return;
             Register.PropertyChanged += Register_PropertyChanged;
+            RaisePropertyChanged(nameof(IsEnabled));
+            RaisePropertyChanged(nameof(IsReceiving));
         }
 
         private void Register_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -22,9 +30,10 @@ namespace ReactorControl.ViewModels
             RaisePropertyChanged(nameof(IsReceiving));
         }
 
-        public Register<DevUShort>? Register { get; }
+        public Register<DevUShort>? Register { get; private set; }
         public bool? IsReceiving => Register == null ? null :
             ((Constants.InterfaceActivityBits)Register.TypedValue.Value).HasFlag(Constants.InterfaceActivityBits.Receive);
+        public bool IsEnabled => mController.IsConnected;
 
         protected DevUShort SetFlag(Constants.InterfaceActivityBits b, bool set = true)
         {
@@ -41,6 +50,7 @@ namespace ReactorControl.ViewModels
             if (Register == null) return;
             await mController.WriteRegister(Constants.InterfaceActivityName, 
                 SetFlag(Constants.InterfaceActivityBits.Receive, receive));
+            await Task.Delay(200);
             await mController.ReadRegister(Constants.InterfaceActivityName);
         }
         public async Task ReloadParams()

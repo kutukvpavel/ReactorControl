@@ -22,16 +22,19 @@
 	<HeaderedContentControl VerticalAlignment="Stretch" VerticalContentAlignment="Stretch" Grid.Column="1" Grid.Row="0"
 							Header="{Binding IndexString}">
 		<Grid ColumnDefinitions="auto, *, auto" RowDefinitions="auto,auto,auto,auto">
-			<TextBlock Grid.Column="0" Grid.Row="0" Classes="name">Commanded volume rate:</TextBlock>
-			<TextBox Grid.Column="1" Grid.Row="0" Text="{Binding CommandedSpeed}" KeyDown="Commanded_KeyDown"
+			<TextBlock Grid.Column="0" Grid.Row="0">Status:</TextBlock>
+			<TextBlock Grid.Column="1" Grid.Row="0" Background="{Binding StatusColor}"
+					   Text="{Binding StatusString}" Padding="3"></TextBlock>
+			<TextBlock Grid.Column="0" Grid.Row="1" Classes="name">Commanded volume rate:</TextBlock>
+			<TextBox Grid.Column="1" Grid.Row="1" Text="{Binding CommandedSpeed}" KeyDown="Commanded_KeyDown"
 					 IsReadOnly="{Binding CanEdit}"></TextBox>
-			<TextBlock Grid.Column="2" Grid.Row="0" Classes="unit" Text="{Binding VolumeRateUnit}">mL/min</TextBlock>
-			<TextBlock Grid.Column="0" Grid.Row="1" Classes="name">Actual volume rate:</TextBlock>
-			<TextBox Grid.Column="1" Grid.Row="1" IsReadOnly="True" Text="{Binding VolumeRate}"></TextBox>
 			<TextBlock Grid.Column="2" Grid.Row="1" Classes="unit" Text="{Binding VolumeRateUnit}">mL/min</TextBlock>
-			<TextBlock Grid.Column="0" Grid.Row="2" Classes="name">Rotation speed:</TextBlock>
-			<TextBox Grid.Column="1" Grid.Row="2" IsReadOnly="True" Text="{Binding RotationSpeed}"></TextBox>
-			<TextBlock Grid.Column="2" Grid.Row="2" Classes="unit">Hz</TextBlock>
+			<TextBlock Grid.Column="0" Grid.Row="2" Classes="name">Actual volume rate:</TextBlock>
+			<TextBox Grid.Column="1" Grid.Row="2" IsReadOnly="True" Text="{Binding VolumeRate}"></TextBox>
+			<TextBlock Grid.Column="2" Grid.Row="2" Classes="unit" Text="{Binding VolumeRateUnit}">mL/min</TextBlock>
+			<TextBlock Grid.Column="0" Grid.Row="3" Classes="name">Rotation speed:</TextBlock>
+			<TextBox Grid.Column="1" Grid.Row="3" IsReadOnly="True" Text="{Binding RotationSpeed}"></TextBox>
+			<TextBlock Grid.Column="2" Grid.Row="3" Classes="unit">Hz</TextBlock>
 		</Grid>
 	</HeaderedContentControl>
 </UserControl>

@@ -145,7 +145,6 @@ namespace ReactorControl.Models
         }
         public void Dispose()
         {
-            Disconnect();
             Master?.Dispose();
             GC.SuppressFinalize(this);
         }
@@ -189,7 +188,7 @@ namespace ReactorControl.Models
         {
             try
             {
-                Disconnect();
+                Task.Run(async () => await Disconnect());
             }
             catch (Exception ex)
             {
@@ -276,7 +275,7 @@ namespace ReactorControl.Models
         {
             if (IsPolling)
             {
-                PollTimer.Enabled = false;
+                PollTimer.Stop();
                 OnPropertyChanged(nameof(IsPolling));
             }
             using (await LockObject.LockAsync())

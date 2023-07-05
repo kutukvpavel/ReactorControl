@@ -25,16 +25,24 @@ namespace ReactorControl.ViewModels
                 RaisePropertyChanged(nameof(IsEnabled));
             }
             RaisePropertyChanged(nameof(IsReceiving));
+            RaisePropertyChanged(nameof(CanControl));
+            RaisePropertyChanged(nameof(CanDFU));
+            RaisePropertyChanged(nameof(CanReset));
         }
 
         private void Register_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             RaisePropertyChanged(nameof(IsReceiving));
+            RaisePropertyChanged(nameof(CanControl));
+            RaisePropertyChanged(nameof(CanReset));
         }
 
         public Register<DevUShort>? Register { get; private set; }
         public bool IsReceiving => mController.IsRemoteEnabled;
         public bool IsEnabled => mController.IsConnected;
+        public bool CanControl => IsEnabled && IsReceiving && (mController.Mode == Constants.Modes.Auto);
+        public bool CanDFU => IsEnabled && IsReceiving && (mController.Mode == Constants.Modes.Init);
+        public bool CanReset => IsEnabled && IsReceiving;
 
         protected DevUShort SetFlag(Constants.InterfaceActivityBits b, bool set = true)
         {
@@ -65,6 +73,11 @@ namespace ReactorControl.ViewModels
         {
             if (Register == null) return;
             await mController.WriteRegister(Constants.InterfaceActivityName, SetFlag(Constants.InterfaceActivityBits.Reboot));
+        }
+        public async Task EnterDFU()
+        {
+            if (Register == null) return;
+            await mController.EnterDFU();
         }
     }
 }

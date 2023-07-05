@@ -8,29 +8,32 @@ namespace ReactorControl.Views
         public InterfaceState()
         {
             InitializeComponent();
+            btnDFU.Click += BtnDFU_Click;
         }
 
-        public async void Remote_Click(object? sender, RoutedEventArgs e)
+        private async void BtnDFU_Click(object? sender, RoutedEventArgs e)
+        {
+            if (DataContext == null) return;
+            await ((ViewModels.InterfaceStateViewModel)DataContext).EnterDFU();
+        }
+        private async void Remote_Click(object? sender, RoutedEventArgs e)
         {
             if (sender == null) return;
             if (DataContext == null) return;
             await ((ViewModels.InterfaceStateViewModel)DataContext).RemoteControl((sender as CheckBox)?.IsChecked ?? false);
         }
-        public async void Save_Click(object? sender, RoutedEventArgs e)
+        private async void Save_Click(object? sender, RoutedEventArgs e)
         {
-            if (sender == null) return;
             if (DataContext == null) return;
             await ((ViewModels.InterfaceStateViewModel)DataContext).SaveNVS();
         }
-        public async void Reload_Click(object? sender, RoutedEventArgs e)
+        private async void Reload_Click(object? sender, RoutedEventArgs e)
         {
-            if (sender == null) return;
             if (DataContext == null) return;
             await ((ViewModels.InterfaceStateViewModel)DataContext).ReloadParams();
         }
-        public async void Reboot_Click(object? sender, RoutedEventArgs e)
+        private async void Reboot_Click(object? sender, RoutedEventArgs e)
         {
-            if (sender == null) return;
             if (DataContext == null) return;
             await ((ViewModels.InterfaceStateViewModel)DataContext).Reset();
         }

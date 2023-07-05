@@ -14,8 +14,9 @@
 	<StackPanel>
 		<CheckBox Margin="5,0" IsChecked="{Binding IsReceiving}" Click="Remote_Click"
 				  IsEnabled="{Binding IsEnabled}">Remote Control</CheckBox>
-		<Button Background="LightGreen" Click="Reload_Click" IsEnabled="{Binding IsEnabled}">Reload Params</Button>
-		<Button Background="LightBlue" Click="Save_Click" IsEnabled="{Binding IsEnabled}">Save NVS</Button>
-		<Button Background="LightCoral" Click="Reboot_Click" IsEnabled="{Binding IsEnabled}">Reboot</Button>
+		<Button Background="LightGreen" Click="Reload_Click" IsEnabled="{Binding CanControl}">Reload Params</Button>
+		<Button Background="LightBlue" Click="Save_Click" IsEnabled="{Binding CanControl}">Save NVS</Button>
+		<Button Background="LightSalmon" Click="Reboot_Click" IsEnabled="{Binding CanReset}">Reboot</Button>
+		<Button Background="LightCoral" x:Name="btnDFU" IsEnabled="{Binding CanDFU}">DFU</Button>
 	</StackPanel>
 </UserControl>

@@ -32,7 +32,12 @@ namespace ReactorControl.ViewModels
 
         private void Controller_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(mController.IsRemoteEnabled)) RaisePropertyChanged(nameof(CanEdit));
+            if (e.PropertyName == nameof(mController.IsRemoteEnabled)
+                || e.PropertyName == nameof(mController.Mode))
+            {
+                RaisePropertyChanged(nameof(CanEdit));
+                RaisePropertyChanged(nameof(CommandedColor));
+            }
         }
         private void CommandedSpeedRegister_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
@@ -92,6 +97,8 @@ namespace ReactorControl.ViewModels
                 return Brushes.LightGray;
             }
         }
+        public IBrush CommandedColor => ((mController.Mode == Constants.Modes.Auto) && mController.IsRemoteEnabled) ?
+            Brushes.LightGreen : Brushes.LightGray;
 
         public async Task SetVolumeRate(float v)
         {

@@ -28,7 +28,8 @@ namespace ReactorControl.Models
 
         #region Private
 
-        protected readonly AsyncLock LockObject = new();
+        protected readonly AsyncLock IoLock = new();
+        protected readonly AsyncLock StateLock = new();
         protected SerialPortStreamAdapter? Adapter;
         protected IModbusMaster? Master;
         protected readonly ModbusFactory Factory = new();
@@ -36,7 +37,7 @@ namespace ReactorControl.Models
         protected bool _IsConnected = false;
         protected readonly Timer KeepAliveTimer;
 
-        private void KeepAliveTimer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
+        private async void KeepAliveTimer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
         {
             IDisposable? l = null;
             try
@@ -44,7 +45,8 @@ namespace ReactorControl.Models
                 if (!IsRemoteEnabled) KeepAliveTimer.Stop();
                 if (Master == null) throw new InvalidOperationException("Connection to the controller doesn't exist.");
 
-                l = LockObject.Lock();
+                l = await StateLock.LockAsync();
+                if (!KeepAliveTimer.Enabled) return;
                 var tr = ReadRegister(Constants.InterfaceActivityName);
                 tr.Wait();
                 if (!tr.IsCompletedSuccessfully) throw tr.Exception ?? new AggregateException("Keep alive read");
@@ -60,7 +62,7 @@ namespace ReactorControl.Models
                 {
                     //Remote rejected
                     KeepAliveTimer.Stop();
-                    OnPropertyChanged(nameof(IsRemoteEnabled));
+                    //OnPropertyChanged(nameof(IsRemoteEnabled));
                     new Thread(() =>
                     {
                         RemoteRejected?.Invoke(this, new EventArgs());
@@ -83,7 +85,7 @@ namespace ReactorControl.Models
             {
                 var task = Poll();
                 task.Wait();
-                if (task.IsCompletedSuccessfully && IsConnected)
+                if (task.IsCompletedSuccessfully && IsConnected && (task.Result != null))
                 {
                     new Thread(() =>
                     {
@@ -107,6 +109,11 @@ namespace ReactorControl.Models
         private void StatusReg_Changed(object? sender, PropertyChangedEventArgs e)
         {
             OnPropertyChanged(nameof(Mode));
+        }
+        private void Activity_Changed(object? sender, PropertyChangedEventArgs e)
+        {
+            if (IsRemoteEnabled && !KeepAliveTimer.Enabled) KeepAliveTimer.Start();
+            OnPropertyChanged(nameof(IsRemoteEnabled));
         }
 
         protected async Task<bool> InitRegisterMap()
@@ -165,6 +172,7 @@ namespace ReactorControl.Models
                 RegisterMap.AddHolding<DevFloat>(Constants.CommandedSpeedBaseName, pumpsTotal);
 
                 ((IRegister)RegisterMap.InputRegisters[Constants.StatusRegisterName]).PropertyChanged += StatusReg_Changed;
+                ((IRegister)RegisterMap.HoldingRegisters[Constants.InterfaceActivityName]).PropertyChanged += Activity_Changed;
             }
             catch (TimeoutException)
             {
@@ -177,7 +185,7 @@ namespace ReactorControl.Models
             }
             return true;
         }
-        protected DevUShort SetFlag(ushort v, Constants.InterfaceActivityBits b, bool set = true)
+        protected static DevUShort SetFlag(ushort v, Constants.InterfaceActivityBits b, bool set = true)
         {
             v &= (ushort)Constants.InterfaceActivityBits.Receive; //Remove any single-shot bits still not cleared
             if (set) v |= (ushort)b;
@@ -288,7 +296,8 @@ namespace ReactorControl.Models
             get {
                 try
                 {
-                    return ((Constants.InterfaceActivityBits)RegisterMap.GetHoldingWord(Constants.InterfaceActivityName))
+                    return IsConnected &&
+                        ((Constants.InterfaceActivityBits)RegisterMap.GetHoldingWord(Constants.InterfaceActivityName))
                         .HasFlag(Constants.InterfaceActivityBits.Receive);
                 }
                 catch (ArgumentException)
@@ -320,7 +329,7 @@ namespace ReactorControl.Models
         {
             if (Port.IsOpen) Port.Close();
             IsConnected = false;
-            using (await LockObject.LockAsync())
+            using (await StateLock.LockAsync())
             {
                 if (portName != null) Port.PortName = portName;
                 Master?.Dispose(); //Disposes Port as well...
@@ -347,6 +356,7 @@ namespace ReactorControl.Models
                 try
                 {
                     IsConnected = await InitRegisterMap();
+                    //OnPropertyChanged(nameof(IsRemoteEnabled));
                     return IsConnected;
                 }
                 catch (TimeoutException ex)
@@ -366,10 +376,9 @@ namespace ReactorControl.Models
         {
             if (IsPolling)
             {
-                PollTimer.Stop();
-                OnPropertyChanged(nameof(IsPolling));
+                SetAutoPoll(false);
             }
-            using (await LockObject.LockAsync())
+            using (await StateLock.LockAsync())
             {
                 IsConnected = false;
                 try
@@ -380,6 +389,7 @@ namespace ReactorControl.Models
                 {
                     Log(e, "Failed to close the port!");
                 }
+                //OnPropertyChanged(nameof(IsRemoteEnabled));
                 return !Port.IsOpen;
             }
         }
@@ -415,7 +425,10 @@ namespace ReactorControl.Models
 
             try
             {
-                reg.Set(await Master.ReadHoldingRegistersAsync(Config.ModbusAddress, reg.Address, reg.Length));
+                using (await IoLock.LockAsync())
+                {
+                    reg.Set(await Master.ReadHoldingRegistersAsync(Config.ModbusAddress, reg.Address, reg.Length));
+                }
                 return reg.Value;
             }
             catch (Exception ex)
@@ -433,7 +446,10 @@ namespace ReactorControl.Models
 
             try
             {
-                await Master.WriteMultipleRegistersAsync(Config.ModbusAddress, reg.Address, value.GetWords());
+                using (await IoLock.LockAsync())
+                {
+                    await Master.WriteMultipleRegistersAsync(Config.ModbusAddress, reg.Address, value.GetWords());
+                }
             }
             catch (Exception ex)
             {
@@ -458,13 +474,14 @@ namespace ReactorControl.Models
 
             await WriteRegister(reg, value);
         }
-        public async Task<PollResult> Poll()
+        public async Task<PollResult?> Poll()
         {
             try
             {
                 if (Master == null) throw new Exception("Controller connection does not exist.");
-                using (await LockObject.LockAsync())
+                using (await IoLock.LockAsync())
                 {
+                    if (!IsConnected || !IsPolling) return null;
                     for (int i = 0; i < RegisterMap.PollInputRegisters.Count; i++)
                     {
                         string name = RegisterMap.PollInputRegisters[i];
@@ -495,17 +512,18 @@ namespace ReactorControl.Models
 
             try
             {
-                foreach (DictionaryEntry item in RegisterMap.InputRegisters)
+                using (await IoLock.LockAsync())
                 {
-                    var reg = (item.Value as IRegister);
-                    if (reg == null) continue;
-                    reg.Set(await Master.ReadHoldingRegistersAsync(Config.ModbusAddress, reg.Address, reg.Length));
-                }
-                foreach (DictionaryEntry item in RegisterMap.HoldingRegisters)
-                {
-                    var reg = (item.Value as IRegister);
-                    if (reg == null) continue;
-                    reg.Set(await Master.ReadHoldingRegistersAsync(Config.ModbusAddress, reg.Address, reg.Length));
+                    foreach (DictionaryEntry item in RegisterMap.InputRegisters)
+                    {
+                        if (item.Value is not IRegister reg) continue;
+                        reg.Set(await Master.ReadHoldingRegistersAsync(Config.ModbusAddress, reg.Address, reg.Length));
+                    }
+                    foreach (DictionaryEntry item in RegisterMap.HoldingRegisters)
+                    {
+                        if (item.Value is not IRegister reg) continue;
+                        reg.Set(await Master.ReadHoldingRegistersAsync(Config.ModbusAddress, reg.Address, reg.Length));
+                    }
                 }
             }
             catch (Exception ex)
@@ -523,19 +541,45 @@ namespace ReactorControl.Models
         {
             DevUShort data = SetFlag(RegisterMap.GetHoldingWord(Constants.InterfaceActivityName), 
                 Constants.InterfaceActivityBits.Receive, enable);
-            using (await LockObject.LockAsync())
+            using (await StateLock.LockAsync())
             {
                 await WriteRegister(Constants.InterfaceActivityName, data);
                 await Task.Delay(200);
                 await ReadRegister(Constants.InterfaceActivityName);
+                if (enable && !IsRemoteEnabled)
+                {
+                    new Thread(() => RemoteRejected?.Invoke(this, new EventArgs())).Start();
+                }
+                else
+                {
+                    KeepAliveTimer.Enabled = enable;
+                }
             }
-            if (enable && !IsRemoteEnabled)
+            OnPropertyChanged(nameof(IsRemoteEnabled));
+        }
+        public async Task EnterDFU()
+        {
+            if (Mode != Constants.Modes.Init) return;
+            if (!IsRemoteEnabled) return;
+            if (IsPolling) SetAutoPoll(false);
+            DevUShort data = SetFlag(RegisterMap.GetHoldingWord(Constants.InterfaceActivityName),
+                Constants.InterfaceActivityBits.FirmwareUpgrade, true);
+            //Disable keep-alive
+            KeepAliveTimer.Stop();
+            //Now we have 5 seconds to complete this sequence
+            using (await StateLock.LockAsync())
             {
-                RemoteRejected?.Invoke(this, new EventArgs());
-            }
-            else
-            {
-                KeepAliveTimer.Enabled = enable;
+                await WriteRegister(Constants.InterfaceActivityName, data);
+                //500mS left to close the port to avoid issues
+                IsConnected = false;
+                try
+                {
+                    Port.Close();
+                }
+                catch (Exception e)
+                {
+                    Log(e, "Failed to close the port!");
+                }
             }
             OnPropertyChanged(nameof(IsRemoteEnabled));
         }

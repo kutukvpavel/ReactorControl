@@ -21,7 +21,9 @@ namespace ReactorControl.Models
             Reload = 2,
             SaveNVS = 4,
             Reboot = 8,
-            KeepAlive = 16
+            KeepAlive = 16,
+            Reserved1 = 32,
+            FirmwareUpgrade = 64
         }
         [Flags]
         public enum MotorStatusBits : ushort

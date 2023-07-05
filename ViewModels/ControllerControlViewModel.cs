@@ -117,8 +117,9 @@ public class ControllerControlViewModel : ViewModelBase
     public async Task Connect()
     {
         SetStatus("Connecting...");
-        await Instance.Connect(PortName);
-        SetStatus("Ready.");
+        bool b = await Instance.Connect(PortName);
+        SetStatus(b ? "Ready." : "Failed.");
+        await Instance.ReadAll();
         await Instance.ReadAll();
     }
     public void UpdatePort()

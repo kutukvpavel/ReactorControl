@@ -36,6 +36,10 @@ namespace ReactorControl
         [DisplayName("Keep-alive interval")]
         [DefaultValue(1000)]
         public int KeepAliveInterval {get;set;} = 1000; //mS
+        [Category(DeviceCategory)]
+        [DisplayName("Start polling after connection")]
+        [DefaultValue(true)]
+        public bool AutoPoll {get;set;} = true;
 
         [Category(StorageCategory)]
         [DisplayName("Device conf. folder path")]

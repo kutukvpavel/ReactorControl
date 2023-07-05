@@ -145,6 +145,7 @@ public partial class App : Application
             Controller.ConnectionTimeout = Settings.ConnectionTimeout;
             Controller.PollInterval = Settings.PollInterval;
             Controller.KeepAliveInterval = Settings.KeepAliveInterval;
+            ControllerControlViewModel.AutoPollAfterConnection = Settings.AutoPoll;
             Log($"Settings file loaded from '{p}'");
         }
         catch (Exception ex)

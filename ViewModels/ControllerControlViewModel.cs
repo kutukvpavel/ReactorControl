@@ -13,6 +13,8 @@ namespace ReactorControl.ViewModels;
 
 public class ControllerControlViewModel : ViewModelBase
 {
+    public static bool AutoPollAfterConnection {get;set;} = false;
+
     public ControllerControlViewModel(Controller c)
     {
         Instance = c;
@@ -121,6 +123,7 @@ public class ControllerControlViewModel : ViewModelBase
         SetStatus(b ? "Ready." : "Failed.");
         await Instance.ReadAll();
         await Instance.ReadAll();
+        if (b && AutoPollAfterConnection) Instance.SetAutoPoll(true);
     }
     public void UpdatePort()
     {

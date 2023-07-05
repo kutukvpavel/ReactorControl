@@ -11,6 +11,7 @@ using Nito.AsyncEx;
 using Timer = System.Timers.Timer;
 using System.Collections;
 using System.IO;
+using NModbus.Device;
 
 namespace ReactorControl.Models
 {
@@ -28,10 +29,10 @@ namespace ReactorControl.Models
 
         #region Private
 
-        protected readonly AsyncLock IoLock = new();
+        //protected readonly AsyncLock IoLock = new();
         protected readonly AsyncLock StateLock = new();
         protected SerialPortStreamAdapter? Adapter;
-        protected IModbusMaster? Master;
+        protected IConcurrentModbusMaster? Master;
         protected readonly ModbusFactory Factory = new();
         protected readonly Timer PollTimer;
         protected bool _IsConnected = false;
@@ -352,7 +353,7 @@ namespace ReactorControl.Models
                     Log(ex, "Failed to open port");
                     return false;
                 }
-                Master = Factory.CreateRtuMaster(Adapter);
+                Master = new ConcurrentModbusMaster(Factory.CreateRtuMaster(Adapter), TimeSpan.FromMilliseconds(3));
                 try
                 {
                     IsConnected = await InitRegisterMap();
@@ -425,10 +426,10 @@ namespace ReactorControl.Models
 
             try
             {
-                using (await IoLock.LockAsync())
-                {
+                /*using (await IoLock.LockAsync())
+                {*/
                     reg.Set(await Master.ReadHoldingRegistersAsync(Config.ModbusAddress, reg.Address, reg.Length));
-                }
+                //}
                 return reg.Value;
             }
             catch (Exception ex)
@@ -446,10 +447,10 @@ namespace ReactorControl.Models
 
             try
             {
-                using (await IoLock.LockAsync())
-                {
+                /*using (await IoLock.LockAsync())
+                {*/
                     await Master.WriteMultipleRegistersAsync(Config.ModbusAddress, reg.Address, value.GetWords());
-                }
+                //}
             }
             catch (Exception ex)
             {
@@ -479,8 +480,8 @@ namespace ReactorControl.Models
             try
             {
                 if (Master == null) throw new Exception("Controller connection does not exist.");
-                using (await IoLock.LockAsync())
-                {
+                /*using (await IoLock.LockAsync())
+                {*/
                     if (!IsConnected || !IsPolling) return null;
                     for (int i = 0; i < RegisterMap.PollInputRegisters.Count; i++)
                     {
@@ -496,7 +497,7 @@ namespace ReactorControl.Models
                             throw new Exception($"Unknown register: {name}");
                         reg.Set(await Master.ReadHoldingRegistersAsync(Config.ModbusAddress, reg.Address, reg.Length));
                     }
-                }
+                //}
                 var res = new PollResult();
                 return res;
             }
@@ -512,8 +513,8 @@ namespace ReactorControl.Models
 
             try
             {
-                using (await IoLock.LockAsync())
-                {
+                /*using (await IoLock.LockAsync())
+                {*/
                     foreach (DictionaryEntry item in RegisterMap.InputRegisters)
                     {
                         if (item.Value is not IRegister reg) continue;
@@ -524,7 +525,7 @@ namespace ReactorControl.Models
                         if (item.Value is not IRegister reg) continue;
                         reg.Set(await Master.ReadHoldingRegistersAsync(Config.ModbusAddress, reg.Address, reg.Length));
                     }
-                }
+                //}
             }
             catch (Exception ex)
             {

@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.Threading.Tasks;
 using Avalonia.Media;
+using Avalonia.Media.Immutable;
 using ModbusRegisterMap;
 using ReactorControl.Models;
 
@@ -97,8 +98,9 @@ namespace ReactorControl.ViewModels
                 return Brushes.LightGray;
             }
         }
+        static protected readonly IBrush FaintGreen = (IBrush)new BrushConverter().ConvertFrom("#c6f5c6");
         public IBrush CommandedColor => ((mController.Mode == Constants.Modes.Auto) && mController.IsRemoteEnabled) ?
-            Brushes.LightGreen : Brushes.LightGray;
+            FaintGreen : Brushes.LightGray;
 
         public async Task SetVolumeRate(float v)
         {

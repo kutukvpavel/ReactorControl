@@ -12,6 +12,7 @@ using Timer = System.Timers.Timer;
 using System.Collections;
 using System.IO;
 using NModbus.Device;
+using System.Linq;
 
 namespace ReactorControl.Models
 {
@@ -94,13 +95,13 @@ namespace ReactorControl.Models
                     }).Start();
                 }
             }
-            catch (IOException)
+            catch (AggregateException ex)
             {
-                OnUnexpectedDisconnect();
-            }
-            catch (TimeoutException)
-            {
-                OnUnexpectedDisconnect();
+                if (ex.InnerExceptions.OfType<TimeoutException>().Any() ||
+                    ex.InnerExceptions.OfType<IOException>().Any())
+                {
+                    OnUnexpectedDisconnect();
+                }
             }
             catch (Exception)
             {
@@ -117,6 +118,14 @@ namespace ReactorControl.Models
             OnPropertyChanged(nameof(IsRemoteEnabled));
         }
 
+        protected static SerialPortStream CreateSerialPort(string name)
+        {
+            return new SerialPortStream(name)
+            {
+                RtsEnable = true,
+                Parity = Parity.Odd
+            };
+        }
         protected async Task<bool> InitRegisterMap()
         {
             try
@@ -200,7 +209,7 @@ namespace ReactorControl.Models
         {
             if (cfg.ConnectionType != ConnectionTypes.Serial) throw new NotImplementedException();
             Config = cfg;
-            Port = new SerialPortStream(cfg.PortName);
+            Port = CreateSerialPort(cfg.PortName);
             PollTimer = new Timer(PollInterval)
             {
                 AutoReset = true,
@@ -334,7 +343,7 @@ namespace ReactorControl.Models
             {
                 if (portName != null) Port.PortName = portName;
                 Master?.Dispose(); //Disposes Port as well...
-                Port = new SerialPortStream(portName ?? Config.PortName);
+                Port = CreateSerialPort(portName ?? Config.PortName);
                 Port.DiscardInBuffer();
                 Port.DiscardOutBuffer();
                 Adapter = new SerialPortStreamAdapter(Port)

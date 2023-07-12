@@ -19,7 +19,7 @@ public class MainWindowViewModel : ViewModelBase
     {
         ModelInstances = c;
         Controllers = new ObservableCollection<ControllerControlViewModel>();
-        Controllers.AddRange(ModelInstances.Select(x => new ControllerControlViewModel(x)));
+        Controllers.AddRange(ModelInstances.Select(x => new ControllerControlViewModel(x, settingsContext)));
         SettingsContext = settingsContext;
         foreach (var item in Controllers)
         {
@@ -62,7 +62,7 @@ public class MainWindowViewModel : ViewModelBase
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
             Controllers.Clear();
-            Controllers.AddRange(ModelInstances.Select(x => new ControllerControlViewModel(x)));
+            Controllers.AddRange(ModelInstances.Select(x => new ControllerControlViewModel(x, SettingsContext)));
         });
         foreach (var item in Controllers)
         {
@@ -74,6 +74,10 @@ public class MainWindowViewModel : ViewModelBase
     {
         SettingsContext = s;
         RaisePropertyChanged(nameof(SettingsContext));
+        foreach (var item in Controllers)
+        {
+            item.UpdateSettingsContext(s);
+        }
     }
 
     private void Item_LogDataReceived(object? sender, LogEventArgs e)

@@ -6,9 +6,11 @@ using Avalonia.Threading;
 using CommandLine;
 using LLibrary;
 using ReactorControl.Models;
+using ReactorControl.Providers;
 using ReactorControl.ViewModels;
 using ReactorControl.Views;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.IO.Compression;
@@ -31,6 +33,8 @@ public partial class App : Application
     }
 
     public ObservableCollection<Controller> Controllers { get; } = new ObservableCollection<Controller>();
+    public List<IInputProvider> InputProviders { get; } = new List<IInputProvider>();
+    public List<IOutputProvider> OutputProviders { get; } = new List<IOutputProvider>();
 
     public void LogError(string message, Exception ex)
     {
@@ -187,7 +191,17 @@ public partial class App : Application
         {
             try
             {
-                var c = new Controller(ControllerConfig.Deserialize(File.ReadAllText(item)));
+                var cfg = ControllerConfig.Deserialize(File.ReadAllText(item));
+                if (cfg.Probes.Length == 0)
+                {
+                    cfg.Probes = ProbeConfig.DefaultProbeConfig.ToArray();
+                }
+                foreach (var p in cfg.Probes)
+                {
+                    p.StatusColorProvider = ProbeConfig.DefaultStatusColorProvider;
+                    p.StatusStringProvider = ProbeConfig.DefaultStatusTextProvider;
+                }
+                var c = new Controller(cfg);
                 Dispatcher.UIThread.Invoke(() =>
                 {
                     Controllers.Add(c);
@@ -201,6 +215,7 @@ public partial class App : Application
         }
         Log("Device load finished.");
     }
+
     protected void SaveDevices()
     {
         string dir;

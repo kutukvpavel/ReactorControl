@@ -1,11 +1,10 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using MessageBox.Avalonia;
+using MsBox.Avalonia;
 using ReactorControl.ViewModels;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Threading.Tasks;
 
 namespace ReactorControl.Views;
 
@@ -77,10 +76,10 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            var m = MessageBoxManager.GetMessageBoxStandardWindow("ReactorControl",
+            var m = MessageBoxManager.GetMessageBoxStandard("ReactorControl",
                 @$"Can't open web link: {Website}, details:
 {ex.Message}");
-            await m.ShowDialog(this);
+            await m.ShowAsPopupAsync(this);
         }
     }
 

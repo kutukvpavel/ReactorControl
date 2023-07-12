@@ -1,4 +1,6 @@
-﻿using System;
+﻿using ReactorControl.Providers;
+using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
@@ -57,6 +59,10 @@ namespace ReactorControl
         [DisplayName("Ignore device conf. backup errors")]
         [DefaultValue(false)]
         public bool IgnoreDeviceFolderBackupErrors { get; set; } = false;
+        [Category(StorageCategory)]
+        [DisplayName("CSV logs path")]
+        [DefaultValue("csv")]
+        public string CsvFolder { get; set; } = "csv";
 
         [Category(ViewCategory)]
         [DisplayName("Main window width (px)")]

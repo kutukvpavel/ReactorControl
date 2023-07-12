@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq;
@@ -6,7 +7,9 @@ using System.Threading.Tasks;
 using Avalonia.Media;
 using Avalonia.Threading;
 using DynamicData;
+using ModbusRegisterMap;
 using ReactorControl.Models;
+using ReactorControl.Providers;
 using RJCP.IO.Ports;
 
 namespace ReactorControl.ViewModels;
@@ -15,25 +18,77 @@ public class ControllerControlViewModel : ViewModelBase
 {
     public static bool AutoPollAfterConnection {get;set;} = false;
 
-    public ControllerControlViewModel(Controller c)
+    public ControllerControlViewModel(Controller c, Settings context)
     {
+        SettingsContext = context;
         Instance = c;
         InterfaceState = new InterfaceStateViewModel(c);
         Instance.PropertyChanged += Instance_PropertyChanged;
         Instance.LogEvent += Instance_LogEvent;
         Instance.UnexpectedDisconnect += Instance_UnexpectedDisconnect;
+        Instance.PollCompleted += Instance_PollCompleted;
+        if (Instance.Config.IpcSocketPort > 0)
+        {
+            OutProviders.Add(new SocketProvider(Name,
+                new System.Net.IPEndPoint(System.Net.IPAddress.Loopback, Instance.Config.IpcSocketPort)));
+        }
+        if (Instance.Config.IpcPipeName.Length > 0)
+        {
+            OutProviders.Add(new PipesProvider(Name));
+        }
+        if (SettingsContext.CsvFolder.Length > 0)
+        {
+            OutProviders.Add(new CsvProvider(SettingsContext.CsvFolder, Name));
+        }
+        foreach (var item in InProviders)
+        {
+            item.CommandReceived += Item_CommandReceived;
+        }
     }
 
+    private async void Item_CommandReceived(object? sender, IpcEventArgs e)
+    {
+        if (e.TargetDeviceName != Name) return;
+        if (e.RegisterName == null)
+        {
+            if (sender is IOutputProvider p)
+            {
+                p.SendTest();
+            }
+            return;
+        }
+        var reg = Instance.RegisterMap.Find(e.RegisterName);
+        if (reg == null || e.ValueString == null) return;
+        try
+        {
+            reg.Value.TrySet(e.ValueString);
+            await Instance.WriteRegister(reg);
+            await Instance.ReadRegister(reg);
+            Log($"Applied IPC message: '{reg.Name}'@'{Name}' = '{e.ValueString}'");
+        }
+        catch (Exception ex)
+        {
+            Log($"failed to apply IPC message for '{reg.Name}'@'{Name}' (set to '{e.ValueString}')", ex);
+        }
+    }
+    private void Instance_PollCompleted(object? sender, Controller.PollResult e)
+    {
+        foreach (var item in OutProviders)
+        {
+            foreach (var reg in e.UpdatedRegisters)
+            {
+                item.Send(reg);
+            }
+        }
+    }
     private void Instance_UnexpectedDisconnect(object? sender, EventArgs e)
     {
         SetStatus("Unexpected disconnect!");
     }
-
     private void Instance_LogEvent(object? sender, LogEventArgs e)
     {
         Log(sender, e);
     }
-
     private void Instance_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(Instance.IsConnected))
@@ -41,6 +96,11 @@ public class ControllerControlViewModel : ViewModelBase
             RaisePropertyChanged(nameof(CanConnect));
             RaisePropertyChanged(nameof(CanDisconnect));
             RaisePropertyChanged(nameof(IsConnected));
+            foreach (var item in OutProviders)
+            {
+                if (IsConnected) item.Connect();
+                else item.Disconnect();
+            }
         }
         if (e.PropertyName == nameof(Instance.IsPolling)) RaisePropertyChanged(nameof(IsPolling));
         if (e.PropertyName == nameof(Instance.Mode))
@@ -48,18 +108,28 @@ public class ControllerControlViewModel : ViewModelBase
             RaisePropertyChanged(nameof(ModeString));
             RaisePropertyChanged(nameof(ModeColor));
         }
-
-        if (e.PropertyName != nameof(Instance.TotalPumps)) return;
-        var p = new PumpControlViewModel[Instance.TotalPumps];
-        for (int i = 0; i < p.Length; i++)
+        if (e.PropertyName == nameof(Instance.TotalPumps))
         {
-            p[i] = new PumpControlViewModel(Instance, i);
+            var p = new PumpControlViewModel[Instance.TotalPumps];
+            for (int i = 0; i < p.Length; i++)
+            {
+                p[i] = new PumpControlViewModel(Instance, i);
+            }
+            Dispatcher.UIThread.Post(() =>
+            {
+                Pumps.Clear();
+                Pumps.AddRange(p);
+            });
         }
-        Dispatcher.UIThread.Post(() =>
+        if (e.PropertyName == nameof(Instance.TotalProbes))
         {
-            Pumps.Clear();
-            Pumps.AddRange(p);
-        });
+            var p = Instance.Config.Probes.Select(x => new ProbeControlViewModel(Instance, x));
+            Dispatcher.UIThread.Post(() =>
+            {
+                Probes.Clear();
+                if (IsConnected) Probes.AddRange(p);
+            });
+        }
     }
 
     public Controller Instance { get; }
@@ -67,6 +137,7 @@ public class ControllerControlViewModel : ViewModelBase
     public OrderedDictionary InputRegisters => Instance.RegisterMap.InputRegisters;
     public InterfaceStateViewModel InterfaceState { get; }
     public ObservableCollection<PumpControlViewModel> Pumps { get; } = new ObservableCollection<PumpControlViewModel>();
+    public ObservableCollection<ProbeControlViewModel> Probes { get; } = new ObservableCollection<ProbeControlViewModel>();
     public bool CanConnect => !IsConnected && SerialPortStream.GetPortNames().Contains(Instance.Config.PortName);
     public bool CanDisconnect => Instance.IsConnected;
     public string Status { get; set; } = "Not connected.";
@@ -116,6 +187,10 @@ public class ControllerControlViewModel : ViewModelBase
     }
     public Color TabColor => IsConnected ? Colors.LimeGreen : Colors.LightCoral;
 
+    public Settings SettingsContext { get; private set; }
+    public List<IOutputProvider> OutProviders { get; } = new List<IOutputProvider>();
+    public List<IInputProvider> InProviders { get; } = new List<IInputProvider>();
+
     public async Task Connect()
     {
         SetStatus("Connecting...");
@@ -137,5 +212,10 @@ public class ControllerControlViewModel : ViewModelBase
     {
         Status = s;
         RaisePropertyChanged(nameof(Status));
+    }
+    public void UpdateSettingsContext(Settings s)
+    {
+        SettingsContext = s;
+        RaisePropertyChanged(nameof(SettingsContext));
     }
 }

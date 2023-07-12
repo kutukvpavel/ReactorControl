@@ -1,5 +1,7 @@
 using System;
+using System.Drawing;
 using ModbusRegisterMap;
+using YamlDotNet.Serialization;
 
 namespace ReactorControl.Models
 {
@@ -18,10 +20,15 @@ namespace ReactorControl.Models
         public DevUShort Reserved { get; set; } = new();
         public DevFloat VolumeRateResolution { get; set; } = new();
 
+        [YamlIgnore]
         public override ushort Size => 1 + 1 + 2;
         public override object Get()
         {
             return this;
+        }
+        public override string ToString(string? format, IFormatProvider? formatProvider)
+        {
+            throw new NotImplementedException();
         }
     }
 
@@ -48,10 +55,15 @@ namespace ReactorControl.Models
         public DevFloat MaxRateRPS {get;set;} = new();
         public DevFloat MaxLoadError {get;set;} = new();
 
+        [YamlIgnore]
         public override ushort Size => 1 * 4 + 2 * 3;
         public override object Get()
         {
             return this;
+        }
+        public override string ToString(string? format, IFormatProvider? formatProvider)
+        {
+            throw new NotImplementedException();
         }
     }
 
@@ -73,10 +85,19 @@ namespace ReactorControl.Models
         public DevUShort Status { get; set; } = new();
         //public ushort Reserved {get;set;}
 
+        [YamlIgnore]
         public override ushort Size => 2 + 2 + 2 + 1 + 1;
         public override object Get()
         {
             return this;
+        }
+        public override string ToString()
+        {
+            return FormattableString.Invariant($"{VolumeRate},{RPS},{Error},{Status}");
+        }
+        public override string ToString(string? format, IFormatProvider? formatProvider)
+        {
+            return string.Format(formatProvider, format ?? "{0},{1},{2},{3}", VolumeRate, RPS, Error, Status);
         }
     }
 }

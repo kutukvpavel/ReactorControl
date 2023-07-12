@@ -35,26 +35,26 @@ namespace ReactorControl.Models
         }
 
         //Config
-        public static readonly string PumpsNumName = "PUMPS_NUM";
-        public static readonly string ThermocouplesNumName = "THERMO_NUM";
-        public static readonly string InputWordsName = "IN_LEN";
-        public static readonly string OutputWordsName = "OUT_LEN";
-        public static readonly string AnalogInputNumName = "AIO_NUM";
+        public const string PumpsNumName = "PUMPS_NUM";
+        public const string ThermocouplesNumName = "THERMO_NUM";
+        public const string InputWordsName = "IN_LEN";
+        public const string OutputWordsName = "OUT_LEN";
+        public const string AnalogInputNumName = "AIO_NUM";
 
         //Holding
-        public static readonly string StatusRegisterName = "STATUS";
-        public static readonly string InterfaceActivityName = "IF_ACT";
-        public static readonly string ModbusAddrName = "ADDR";
-        public static readonly string ThermocoupleBaseName = "THERMO_";
-        public static readonly string AnalogInputBaseName = "AIO_";
-        public static readonly string AnalogCalBaseName = "AIO_CAL_";
-        public static readonly string InputsRegisterBaseName = "IN_";
-        public static readonly string OutputsRegisterBaseName = "OUT_";
-        public static readonly string CommandedOutputsBaseName = "COMMANDED_OUT_";
-        public static readonly string PumpParamsName = "PUMP_PARAMS";
-        public static readonly string MotorParamsBaseName = "MOTOR_PARAMS_";
-        public static readonly string MotorRegistersBaseName = "MOTOR_REGS_";
-        public static readonly string CommandedSpeedBaseName = "COMMANDED_SPEED_";
+        public const string StatusRegisterName = "STATUS";
+        public const string InterfaceActivityName = "IF_ACT";
+        public const string ModbusAddrName = "ADDR";
+        public const string ThermocoupleBaseName = "THERMO_";
+        public const string AnalogInputBaseName = "AIO_";
+        public const string AnalogCalBaseName = "AIO_CAL_";
+        public const string InputsRegisterBaseName = "IN_";
+        public const string OutputsRegisterBaseName = "OUT_";
+        public const string CommandedOutputsBaseName = "COMMANDED_OUT_";
+        public const string PumpParamsName = "PUMP_PARAMS";
+        public const string MotorParamsBaseName = "MOTOR_PARAMS_";
+        public const string MotorRegistersBaseName = "MOTOR_REGS_";
+        public const string CommandedSpeedBaseName = "COMMANDED_SPEED_";
 
         public enum ConfigRegisters
         {

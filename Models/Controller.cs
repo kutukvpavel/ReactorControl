@@ -1,18 +1,18 @@
-using System;
-using System.ComponentModel;
-using System.Threading;
-using System.Threading.Tasks;
 using ModbusRegisterMap;
+using Nito.AsyncEx;
 using NModbus;
+using NModbus.Device;
 using NModbus.SerialPortStream;
 using RJCP.IO.Ports;
-using Nito.AsyncEx;
+using System;
+using System.Collections;
+using System.ComponentModel;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 using Timer = System.Timers.Timer;
-using System.Collections;
-using System.IO;
-using NModbus.Device;
-using System.Linq;
 
 namespace ReactorControl.Models
 {
@@ -20,12 +20,15 @@ namespace ReactorControl.Models
     {
         public class PollResult
         {
-            public PollResult()
+            public PollResult(IRegister[] updatedRegisters)
             {
                 Timestamp = DateTime.Now;
+                UpdatedRegisters = updatedRegisters;
+
             }
 
             public DateTime Timestamp { get; }
+            public IRegister[] UpdatedRegisters { get; }
         }
 
         #region Private
@@ -297,10 +300,16 @@ namespace ReactorControl.Models
                 _IsConnected = value;
                 OnPropertyChanged(nameof(IsConnected));
                 OnPropertyChanged(nameof(TotalPumps));
+                OnPropertyChanged(nameof(TotalProbes));
+                OnPropertyChanged(nameof(TotalAnalogInputs));
+                OnPropertyChanged(nameof(TotalThermocouples));
             }
         }
         public Map RegisterMap { get; } = new Map();
         public int TotalPumps => IsConnected ? RegisterMap.GetInputWord(Constants.PumpsNumName) : 0;
+        public int TotalThermocouples => IsConnected ? RegisterMap.GetInputWord(Constants.ThermocouplesNumName) : 0;
+        public int TotalAnalogInputs => IsConnected ? RegisterMap.GetInputWord(Constants.AnalogInputNumName) : 0;
+        public int TotalProbes => TotalThermocouples + TotalAnalogInputs;
         public bool IsPolling => PollTimer.Enabled;
         public bool IsRemoteEnabled {
             get {
@@ -330,6 +339,7 @@ namespace ReactorControl.Models
                 }
             }
         }
+        public IRegister[] PollRegisters { get; private set; } = Array.Empty<IRegister>();
 
         #endregion
 
@@ -366,6 +376,7 @@ namespace ReactorControl.Models
                 try
                 {
                     IsConnected = await InitRegisterMap();
+                    if (IsConnected) PollRegisters = RegisterMap.GetPollRegs().ToArray();
                     //OnPropertyChanged(nameof(IsRemoteEnabled));
                     return IsConnected;
                 }
@@ -390,6 +401,7 @@ namespace ReactorControl.Models
             }
             using (await StateLock.LockAsync())
             {
+                PollRegisters = Array.Empty<IRegister>();
                 IsConnected = false;
                 try
                 {
@@ -507,7 +519,7 @@ namespace ReactorControl.Models
                         reg.Set(await Master.ReadHoldingRegistersAsync(Config.ModbusAddress, reg.Address, reg.Length));
                     }
                 //}
-                var res = new PollResult();
+                var res = new PollResult(PollRegisters);
                 return res;
             }
             catch (Exception ex)

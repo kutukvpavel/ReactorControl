@@ -133,13 +133,10 @@ public class RegisterEditViewModel : ViewModelBase, INotifyDataErrorInfo
         await mController.ReadRegister(mRegister);
         var dialog = new ComplexRegisterEdit() { DataContext = mRegister };
         await dialog.ShowDialog(owner);
-        if (!dialog.Result)
-        {
-            await mController.ReadRegister(mRegister);
-        }
-        else
+        if (dialog.Result)
         {
             await mController.WriteRegister(mRegister);
         }
+        await mController.ReadRegister(mRegister);
     }
 }

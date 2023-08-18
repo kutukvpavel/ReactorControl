@@ -21,23 +21,34 @@
 	</UserControl.Styles>
 	<HeaderedContentControl VerticalAlignment="Stretch" VerticalContentAlignment="Stretch" Grid.Column="1" Grid.Row="0"
 							Header="{Binding IndexString}">
-		<Grid ColumnDefinitions="auto, *, auto" RowDefinitions="auto,auto,auto,auto">
+		<Grid ColumnDefinitions="auto, *, auto" RowDefinitions="auto,auto,auto,auto,auto,auto">
 			<TextBlock Grid.Column="0" Grid.Row="0" Classes="name">Status:</TextBlock>
 			<TextBlock Grid.Column="1" Grid.Row="0" Background="{Binding StatusColor}"
 					   Text="{Binding StatusString}" Padding="3"></TextBlock>
 			<Button Grid.Column="2" Content="[0]" IsEnabled="{Binding CanEdit}" x:Name="btnZero"
 				HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="3" Padding="0"
 				VerticalContentAlignment="Center" Background="LightSalmon"></Button>
-			<TextBlock Grid.Column="0" Grid.Row="1" Classes="name">Remote volume rate:</TextBlock>
+			<TextBlock Grid.Column="0" Grid.Row="1" Classes="name">Set rate:</TextBlock>
 			<TextBox Grid.Column="1" Grid.Row="1" Text="{Binding CommandedSpeed}" KeyDown="Commanded_KeyDown"
 					 IsReadOnly="{Binding !CanEdit}" x:Name="txtCommanded" Background="{Binding CommandedColor}"></TextBox>
 			<TextBlock Grid.Column="2" Grid.Row="1" Classes="unit" Text="{Binding VolumeRateUnit}">mL/min</TextBlock>
-			<TextBlock Grid.Column="0" Grid.Row="2" Classes="name">Actual volume rate:</TextBlock>
+			<TextBlock Grid.Column="0" Grid.Row="2" Classes="name">Actual rate:</TextBlock>
 			<TextBox Grid.Column="1" Grid.Row="2" IsReadOnly="True" Text="{Binding VolumeRate}"></TextBox>
 			<TextBlock Grid.Column="2" Grid.Row="2" Classes="unit" Text="{Binding VolumeRateUnit}">mL/min</TextBlock>
 			<TextBlock Grid.Column="0" Grid.Row="3" Classes="name">Rotation speed:</TextBlock>
 			<TextBox Grid.Column="1" Grid.Row="3" IsReadOnly="True" Text="{Binding RotationSpeed}"></TextBox>
 			<TextBlock Grid.Column="2" Grid.Row="3" Classes="unit">Hz</TextBlock>
+			<CheckBox Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="4" HorizontalAlignment="Center"
+					 IsEnabled="{Binding !CanEdit}" x:Name="chkEnableTimer" Background="{Binding CommandedColor}">
+					 Enable Timer
+					 </CheckBox>
+			<Button Grid.Column="2" Grid.Row="4" Content="Go" IsEnabled="{Binding CanEdit}" x:Name="btnGo"
+				HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="3" Padding="0"
+				VerticalContentAlignment="Center" Background="LightGreen"></Button>
+			<TextBlock Grid.Column="0" Grid.Row="5" Classes="name">Pumping time:</TextBlock>
+			<TextBox Grid.Column="1" Grid.Row="5" Text="{Binding CommandedTime}" KeyDown="CommandedTime_KeyDown"
+					 IsReadOnly="{Binding !CanEdit}" x:Name="txtCommandedTime" Background="{Binding CommandedColor}"></TextBox>
+			<TextBlock Grid.Column="2" Grid.Row="5" Classes="unit">s</TextBlock>
 		</Grid>
 	</HeaderedContentControl>
 </UserControl>

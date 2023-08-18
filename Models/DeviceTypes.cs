@@ -75,7 +75,9 @@ namespace ReactorControl.Models
                 VolumeRate,
                 RPS,
                 Error,
-                Status
+                Status,
+                Reserved1,
+                RunTimeLeft
             };
         }
 
@@ -83,10 +85,11 @@ namespace ReactorControl.Models
         public DevFloat RPS { get; set; } = new();
         public DevFloat Error { get; set; } = new();
         public DevUShort Status { get; set; } = new();
-        //public ushort Reserved {get;set;}
+        public DevUShort Reserved1 {get;set;} = new();
+        public DevFloat RunTimeLeft {get;set;} = new();
 
         [YamlIgnore]
-        public override ushort Size => 2 + 2 + 2 + 1 + 1;
+        public override ushort Size => 2 + 2 + 2 + 1 + 1 + 2;
         public override object Get()
         {
             return this;

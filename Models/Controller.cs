@@ -178,11 +178,12 @@ namespace ReactorControl.Models
                 RegisterMap.AddInput<DevUShort>(Constants.InputsRegisterBaseName, inputWords, poll: true);
                 RegisterMap.AddInput<DevUShort>(Constants.OutputsRegisterBaseName, outputWords, poll: true);
                 RegisterMap.AddHolding<DevUShort>(Constants.CommandedOutputsBaseName, outputWords);
-                RegisterMap.AddHolding<DevUShort>("reserved1", 1);
+                RegisterMap.AddHolding<DevUShort>(Constants.CommandedFlagsBaseName, pumpsTotal);
                 RegisterMap.AddHolding<DevPumpParams>(Constants.PumpParamsName, 1);
                 RegisterMap.AddHolding<DevMotorParams>(Constants.MotorParamsBaseName, pumpsTotal);
                 RegisterMap.AddInput<DevMotorReg>(Constants.MotorRegistersBaseName, pumpsTotal, poll: true);
                 RegisterMap.AddHolding<DevFloat>(Constants.CommandedSpeedBaseName, pumpsTotal);
+                RegisterMap.AddHolding<DevFloat>(Constants.CommandedTimerBaseName, pumpsTotal);
 
                 ((IRegister)RegisterMap.InputRegisters[Constants.StatusRegisterName]).PropertyChanged += StatusReg_Changed;
                 ((IRegister)RegisterMap.HoldingRegisters[Constants.InterfaceActivityName]).PropertyChanged += Activity_Changed;

@@ -37,5 +37,10 @@ namespace ReactorControl.Views
                 txt.BorderBrush = Brushes.Coral;
             }
         }
+
+        public async void CommandedTime_KeyDown(object? sender, KeyEventArgs e)
+        {
+
+        }
     }
 }

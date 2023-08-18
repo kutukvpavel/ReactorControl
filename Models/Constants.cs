@@ -55,6 +55,8 @@ namespace ReactorControl.Models
         public const string MotorParamsBaseName = "MOTOR_PARAMS_";
         public const string MotorRegistersBaseName = "MOTOR_REGS_";
         public const string CommandedSpeedBaseName = "COMMANDED_SPEED_";
+        public const string CommandedFlagsBaseName = "COMMANDED_FLAGS_";
+        public const string CommandedTimerBaseName = "COMMANDED_TIM_";
 
         public enum ConfigRegisters
         {

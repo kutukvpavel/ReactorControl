@@ -51,6 +51,9 @@ public class ControllerConfig
     [DisplayName("Volume rate units to display")]
     [DefaultValue("mL/min")]
     public string VolumeRateUnit { get; set; } = "mL/min";
+    [DisplayName("Volume units to display")]
+    [DefaultValue("mL")]
+    public string VolumeUnit { get; set; } = "mL";
     [DisplayName("Probes to display (right column)")]
     public ProbeConfig[] Probes { get; set; } = Array.Empty<ProbeConfig>();
     [DisplayName("IPC socket port (-1 to disable)")]

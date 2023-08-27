@@ -31,7 +31,14 @@ namespace ReactorControl.Models
             Missing = 1,
             Overload = 2,
             Paused = 4,
-            Running = 8
+            Running = 8,
+            OnTimer = 16,
+            TimerCompleted = 32
+        }
+        [Flags]
+        public enum PumpFlags : ushort
+        {
+            EnableTimer = 1
         }
 
         //Config

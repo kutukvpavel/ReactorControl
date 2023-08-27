@@ -206,6 +206,13 @@ namespace ReactorControl.Models
             else v &= (ushort)(~(ushort)b);
             return (DevUShort)v;
         }
+        protected static DevUShort SetFlag(ushort v, Constants.PumpFlags b, bool set = true)
+        {
+            v &= 0; //Remove any single-shot bits still not cleared
+            if (set) v |= (ushort)b;
+            else v &= (ushort)(~(ushort)b);
+            return (DevUShort)v;
+        }
 
         #endregion
 
@@ -605,6 +612,14 @@ namespace ReactorControl.Models
                 }
             }
             OnPropertyChanged(nameof(IsRemoteEnabled));
+        }
+        public async Task EnableTimer(int index, bool v)
+        {
+            if (Mode != Constants.Modes.Auto) return;
+            if (!IsRemoteEnabled) return;
+            DevUShort data = SetFlag(RegisterMap.GetHoldingWord(Constants.CommandedFlagsBaseName),
+                Constants.PumpFlags.EnableTimer, v);
+            await WriteRegister(Constants.CommandedFlagsBaseName + index.ToString(), data);
         }
         #endregion
 

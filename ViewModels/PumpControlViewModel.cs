@@ -2,7 +2,6 @@
 using System.Globalization;
 using System.Threading.Tasks;
 using Avalonia.Media;
-using Avalonia.Media.Immutable;
 using ModbusRegisterMap;
 using ReactorControl.Models;
 
@@ -25,10 +24,13 @@ namespace ReactorControl.ViewModels
                 as Register<DevMotorParams>;
             CommandedSpeedRegister = mController.RegisterMap.HoldingRegisters[Constants.CommandedSpeedBaseName + Index.ToString()]
                 as Register<DevFloat>;
+            CommandedTimeRegister = mController.RegisterMap.HoldingRegisters[Constants.CommandedTimerBaseName + Index.ToString()]
+                as Register<DevFloat>;
             mController.PropertyChanged += Controller_PropertyChanged;
             if (MotorReg != null) MotorReg.PropertyChanged += MotorReg_PropertyChanged;
             if (MotorParams != null) MotorParams.PropertyChanged += MotorParams_PropertyChanged;
             if (CommandedSpeedRegister != null) CommandedSpeedRegister.PropertyChanged += CommandedSpeedRegister_PropertyChanged;
+            if (CommandedTimeRegister != null) CommandedTimeRegister.PropertyChanged += CommandedTimeRegister_PropertyChanged;
         }
 
         private void Controller_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -40,9 +42,15 @@ namespace ReactorControl.ViewModels
                 RaisePropertyChanged(nameof(CommandedColor));
             }
         }
+        private void CommandedTimeRegister_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            RaisePropertyChanged(nameof(CommandedTime));
+            RaisePropertyChanged(nameof(CommandedVolume));
+        }
         private void CommandedSpeedRegister_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             RaisePropertyChanged(nameof(CommandedSpeed));
+            RaisePropertyChanged(nameof(CommandedVolume));
         }
         private void MotorParams_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
@@ -58,12 +66,25 @@ namespace ReactorControl.ViewModels
             RaisePropertyChanged(nameof(StatusColor));
         }
 
+        private async Task SetRegister(Register<DevFloat>? r, float v)
+        {
+            if (r == null || MotorReg == null) return;
+            r.TypedValue.Value = v; //Commanded registers are not polled, no concurrency expected
+            await mController.WriteRegister(r);
+            await Task.Delay(100);
+            await mController.ReadRegister(r);
+            if (mController.IsPolling) return;
+            await mController.ReadRegister(MotorReg);
+        }
+
         public int Index { get; }
         public string IndexString => $"Pump #{Index}";
         public string VolumeRateUnit => mController.Config.VolumeRateUnit;
+        public string VolumeUnit => mController.Config.VolumeUnit;
         public Register<DevMotorReg>? MotorReg { get; }
         public Register<DevMotorParams>? MotorParams { get; }
         public Register<DevFloat>? CommandedSpeedRegister { get; }
+        public Register<DevFloat>? CommandedTimeRegister { get; }
         public Constants.MotorStatusBits? MotorStatus => (Constants.MotorStatusBits?)MotorReg?.TypedValue.Status.Value;
         public string? VolumeRate => MotorReg?.TypedValue.VolumeRate.Value
             .ToString(SpeedNumberFormat, CultureInfo.CurrentUICulture) ?? NotAvailable;
@@ -71,7 +92,11 @@ namespace ReactorControl.ViewModels
             ?? NotAvailable;
         public string? CommandedSpeed => CommandedSpeedRegister?.TypedValue.Value
             .ToString(SpeedNumberFormat, CultureInfo.CurrentUICulture) ?? NotAvailable;
-        public bool CanEdit => CommandedSpeedRegister != null && MotorReg != null && mController.IsRemoteEnabled;
+        public string? CommandedTime;
+        public string? CommandedVolume;
+        public bool CanEdit => CommandedSpeedRegister != null && MotorReg != null && mController.IsRemoteEnabled &&
+            ((MotorStatus?.HasFlag(Constants.MotorStatusBits.TimerCompleted) ?? false) || 
+            (!MotorStatus?.HasFlag(Constants.MotorStatusBits.OnTimer) ?? false));
         public string? Load => MotorReg == null ? NotAvailable :
             (MotorReg.TypedValue.Error.Value * 100).ToString("F0", CultureInfo.CurrentUICulture);
         public string StatusString
@@ -104,13 +129,15 @@ namespace ReactorControl.ViewModels
 
         public async Task SetVolumeRate(float v)
         {
-            if (CommandedSpeedRegister == null || MotorReg == null) return;
-            CommandedSpeedRegister.TypedValue.Value = v; //Commanded registers are not polled, no concurrency expected
-            await mController.WriteRegister(CommandedSpeedRegister);
-            await Task.Delay(100);
-            await mController.ReadRegister(CommandedSpeedRegister);
-            if (mController.IsPolling) return;
-            await mController.ReadRegister(MotorReg);
+            await SetRegister(CommandedSpeedRegister, v);
+        }
+        public async Task SetTimer(float v)
+        {
+            await SetRegister(CommandedTimeRegister, v);
+        }
+        public async Task RunTimer()
+        {
+            await mController.EnableTimer(Index, true);
         }
     }
 }

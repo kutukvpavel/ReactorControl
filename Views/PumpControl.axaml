@@ -21,7 +21,7 @@
 	</UserControl.Styles>
 	<HeaderedContentControl VerticalAlignment="Stretch" VerticalContentAlignment="Stretch" Grid.Column="1" Grid.Row="0"
 							Header="{Binding IndexString}">
-		<Grid ColumnDefinitions="auto, *, auto" RowDefinitions="auto,auto,auto,auto,auto,auto">
+		<Grid ColumnDefinitions="auto, *, auto" RowDefinitions="auto,auto,auto,auto,auto,auto,auto">
 			<TextBlock Grid.Column="0" Grid.Row="0" Classes="name">Status:</TextBlock>
 			<TextBlock Grid.Column="1" Grid.Row="0" Background="{Binding StatusColor}"
 					   Text="{Binding StatusString}" Padding="3"></TextBlock>
@@ -44,11 +44,22 @@
 					 </CheckBox>
 			<Button Grid.Column="2" Grid.Row="4" Content="Go" IsEnabled="{Binding CanEdit}" x:Name="btnGo"
 				HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="3" Padding="0"
-				VerticalContentAlignment="Center" Background="LightGreen"></Button>
-			<TextBlock Grid.Column="0" Grid.Row="5" Classes="name">Pumping time:</TextBlock>
+				VerticalContentAlignment="Center" Background="LightGreen"
+				IsVisible="{Binding #chkEnableTimer.IsChecked}"></Button>
+			<TextBlock Grid.Column="0" Grid.Row="5" Classes="name"
+				IsVisible="{Binding #chkEnableTimer.IsChecked}">Pumping time:</TextBlock>
 			<TextBox Grid.Column="1" Grid.Row="5" Text="{Binding CommandedTime}" KeyDown="CommandedTime_KeyDown"
-					 IsReadOnly="{Binding !CanEdit}" x:Name="txtCommandedTime" Background="{Binding CommandedColor}"></TextBox>
-			<TextBlock Grid.Column="2" Grid.Row="5" Classes="unit">s</TextBlock>
+					 IsReadOnly="{Binding !CanEdit}" x:Name="txtCommandedTime" Background="{Binding CommandedColor}"
+					 IsVisible="{Binding #chkEnableTimer.IsChecked}"></TextBox>
+			<TextBlock Grid.Column="2" Grid.Row="5" Classes="unit"
+				IsVisible="{Binding #chkEnableTimer.IsChecked}">s</TextBlock>
+			<TextBlock Grid.Column="0" Grid.Row="6" Classes="name"
+				IsVisible="{Binding #chkEnableTimer.IsChecked}">Volume:</TextBlock>
+			<TextBox Grid.Column="1" Grid.Row="6" Text="{Binding CommandedVolume}" KeyDown="CommandedVolume_KeyDown"
+					 IsReadOnly="{Binding !CanEdit}" x:Name="txtCommandedVolume" Background="{Binding CommandedColor}"
+					 IsVisible="{Binding #chkEnableTimer.IsChecked}"></TextBox>
+			<TextBlock Grid.Column="2" Grid.Row="6" Classes="unit" Text="{Binding VolumeUnit}"
+				IsVisible="{Binding #chkEnableTimer.IsChecked}">mL</TextBlock>
 		</Grid>
 	</HeaderedContentControl>
 </UserControl>

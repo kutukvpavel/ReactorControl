@@ -41,6 +41,7 @@ namespace ReactorControl.ViewModels
                 || e.PropertyName == nameof(mController.Mode))
             {
                 RaisePropertyChanged(nameof(CanEdit));
+                RaisePropertyChanged(nameof(CanChangeTimerMode));
                 RaisePropertyChanged(nameof(CommandedColor));
             }
         }
@@ -61,11 +62,14 @@ namespace ReactorControl.ViewModels
         private void MotorReg_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             RaisePropertyChanged(nameof(MotorStatus));
+            RaisePropertyChanged(nameof(TimerEnabled));
             RaisePropertyChanged(nameof(VolumeRate));
             RaisePropertyChanged(nameof(RotationSpeed));
             RaisePropertyChanged(nameof(Load));
             RaisePropertyChanged(nameof(StatusString));
             RaisePropertyChanged(nameof(StatusColor));
+            RaisePropertyChanged(nameof(TimeLeft));
+            RaisePropertyChanged(nameof(VolumeLeft));
         }
 
         private async Task SetRegister(Register<DevFloat>? r, float v)
@@ -105,9 +109,21 @@ namespace ReactorControl.ViewModels
                     .ToString(VolumeNumberFormat, CultureInfo.CurrentUICulture);
             }
         }
-        public bool CanEdit => CommandedSpeedRegister != null && MotorReg != null && mController.IsRemoteEnabled &&
-            ((MotorStatus?.HasFlag(Constants.MotorStatusBits.TimerTicking) ?? false) || 
-            (!MotorStatus?.HasFlag(Constants.MotorStatusBits.TimerMode) ?? false));
+        public string? TimeLeft => MotorReg?.TypedValue.RunTimeLeft.Value
+            .ToString(TimeNumberFormat, CultureInfo.CurrentUICulture) ?? NotAvailable;
+        public string? VolumeLeft 
+        {
+            get {
+                if (MotorReg == null) return NotAvailable;
+                return (MotorReg.TypedValue.RunTimeLeft.Value * MotorReg.TypedValue.VolumeRate.Value)
+                    .ToString(VolumeNumberFormat, CultureInfo.CurrentUICulture);
+            }
+        }
+        public bool? TimerEnabled => MotorStatus?.HasFlag(Constants.MotorStatusBits.TimerMode);
+        public bool CanEdit => CanChangeTimerMode &&
+            ((!(MotorStatus?.HasFlag(Constants.MotorStatusBits.TimerTicking) ?? false) && (MotorStatus?.HasFlag(Constants.MotorStatusBits.TimerMode) ?? false)) || 
+            (!(MotorStatus?.HasFlag(Constants.MotorStatusBits.TimerMode) ?? false)));
+        public bool CanChangeTimerMode => CommandedSpeedRegister != null && MotorReg != null && mController.IsRemoteEnabled;
         public string? Load => MotorReg == null ? NotAvailable :
             (MotorReg.TypedValue.Error.Value * 100).ToString("F0", CultureInfo.CurrentUICulture);
         public string StatusString

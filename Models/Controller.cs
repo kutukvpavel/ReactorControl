@@ -617,17 +617,21 @@ namespace ReactorControl.Models
         {
             if (Mode != Constants.Modes.Auto) return;
             if (!IsRemoteEnabled) return;
-            DevUShort data = SetFlag(RegisterMap.GetHoldingWord(Constants.CommandedFlagsBaseName),
+            string regName = Constants.CommandedFlagsBaseName + index.ToString();
+            DevUShort data = SetFlag(RegisterMap.GetHoldingWord(regName),
                 Constants.PumpFlags.EnableTimer, v);
-            await WriteRegister(Constants.CommandedFlagsBaseName + index.ToString(), data);
+            await WriteRegister(regName, data);
+            await Task.Delay(100);
+            await ReadRegister(regName);
         }
         public async Task TriggerTimer(int index)
         {
             if (Mode != Constants.Modes.Auto) return;
             if (!IsRemoteEnabled) return;
-            DevUShort data = SetFlag(RegisterMap.GetHoldingWord(Constants.CommandedFlagsBaseName),
+            string regName = Constants.CommandedFlagsBaseName + index.ToString();
+            DevUShort data = SetFlag(RegisterMap.GetHoldingWord(regName),
                 Constants.PumpFlags.TriggerTimer, true);
-            await WriteRegister(Constants.CommandedFlagsBaseName + index.ToString(), data);
+            await WriteRegister(regName, data);
         }
         #endregion
 

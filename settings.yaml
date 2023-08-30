@@ -1,0 +1,11 @@
+ConnectionTimeout: 500
+PollInterval: 500
+KeepAliveInterval: 1000
+AutoPoll: true
+DeviceFolder: devices
+DeviceBackupFolder: backup
+MaxDeviceBackupsToStore: 10
+IgnoreDeviceFolderBackupErrors: false
+CsvFolder: csv
+MainWindowWidth: 1323
+MainWindowHeight: 841

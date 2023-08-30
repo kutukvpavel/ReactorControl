@@ -32,13 +32,14 @@ namespace ReactorControl.Models
             Overload = 2,
             Paused = 4,
             Running = 8,
-            OnTimer = 16,
-            TimerCompleted = 32
+            TimerMode = 16,
+            TimerTicking = 32
         }
         [Flags]
         public enum PumpFlags : ushort
         {
-            EnableTimer = 1
+            EnableTimer = 1,
+            TriggerTimer = 2
         }
 
         //Config

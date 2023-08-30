@@ -9,7 +9,9 @@ namespace ReactorControl.ViewModels
 {
     public class PumpControlViewModel : ViewModelBase
     {
+        public static string TimeNumberFormat { get; set; } = "F1";
         public static string SpeedNumberFormat { get; set; } = "F3";
+        public static string VolumeNumberFormat { get; set; } = "F2";
         public static string NotAvailable { get; set; } = "N/A";
 
         protected Controller mController;
@@ -92,11 +94,20 @@ namespace ReactorControl.ViewModels
             ?? NotAvailable;
         public string? CommandedSpeed => CommandedSpeedRegister?.TypedValue.Value
             .ToString(SpeedNumberFormat, CultureInfo.CurrentUICulture) ?? NotAvailable;
-        public string? CommandedTime;
-        public string? CommandedVolume;
+        public string? CommandedTime => CommandedTimeRegister?.TypedValue.Value
+            .ToString(TimeNumberFormat, CultureInfo.CurrentUICulture) ?? NotAvailable;
+        public string? CommandedVolume 
+        {
+            get {
+                if (CommandedSpeedRegister?.TypedValue is null) return NotAvailable;
+                if (CommandedTimeRegister?.TypedValue is null) return NotAvailable;
+                return (CommandedSpeedRegister.TypedValue.Value * CommandedTimeRegister.TypedValue.Value)
+                    .ToString(VolumeNumberFormat, CultureInfo.CurrentUICulture);
+            }
+        }
         public bool CanEdit => CommandedSpeedRegister != null && MotorReg != null && mController.IsRemoteEnabled &&
-            ((MotorStatus?.HasFlag(Constants.MotorStatusBits.TimerCompleted) ?? false) || 
-            (!MotorStatus?.HasFlag(Constants.MotorStatusBits.OnTimer) ?? false));
+            ((MotorStatus?.HasFlag(Constants.MotorStatusBits.TimerTicking) ?? false) || 
+            (!MotorStatus?.HasFlag(Constants.MotorStatusBits.TimerMode) ?? false));
         public string? Load => MotorReg == null ? NotAvailable :
             (MotorReg.TypedValue.Error.Value * 100).ToString("F0", CultureInfo.CurrentUICulture);
         public string StatusString
@@ -135,9 +146,13 @@ namespace ReactorControl.ViewModels
         {
             await SetRegister(CommandedTimeRegister, v);
         }
+        public async Task EnableTimer(bool v)
+        {
+            await mController.EnableTimer(Index, v);
+        }
         public async Task RunTimer()
         {
-            await mController.EnableTimer(Index, true);
+            await mController.TriggerTimer(Index);
         }
     }
 }

@@ -208,7 +208,7 @@ namespace ReactorControl.Models
         }
         protected static DevUShort SetFlag(ushort v, Constants.PumpFlags b, bool set = true)
         {
-            v &= 0; //Remove any single-shot bits still not cleared
+            v &= (ushort)Constants.PumpFlags.EnableTimer; //Remove any single-shot bits still not cleared
             if (set) v |= (ushort)b;
             else v &= (ushort)(~(ushort)b);
             return (DevUShort)v;
@@ -619,6 +619,14 @@ namespace ReactorControl.Models
             if (!IsRemoteEnabled) return;
             DevUShort data = SetFlag(RegisterMap.GetHoldingWord(Constants.CommandedFlagsBaseName),
                 Constants.PumpFlags.EnableTimer, v);
+            await WriteRegister(Constants.CommandedFlagsBaseName + index.ToString(), data);
+        }
+        public async Task TriggerTimer(int index)
+        {
+            if (Mode != Constants.Modes.Auto) return;
+            if (!IsRemoteEnabled) return;
+            DevUShort data = SetFlag(RegisterMap.GetHoldingWord(Constants.CommandedFlagsBaseName),
+                Constants.PumpFlags.TriggerTimer, true);
             await WriteRegister(Constants.CommandedFlagsBaseName + index.ToString(), data);
         }
         #endregion

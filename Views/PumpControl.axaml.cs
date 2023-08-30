@@ -45,6 +45,13 @@ namespace ReactorControl.Views
 
             await vm.RunTimer();
         }
+        public async void EnableTimer_Click(object? sender, RoutedEventArgs e)
+        {
+            if (DataContext is not PumpControlViewModel vm) return;
+            if (sender is not CheckBox chk) return;
+
+            await vm.EnableTimer(chk.IsChecked ?? false);
+        }
 
         public async void Commanded_KeyDown(object? sender, KeyEventArgs e)
         {

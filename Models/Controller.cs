@@ -3,6 +3,7 @@ using Nito.AsyncEx;
 using NModbus;
 using NModbus.Device;
 using NModbus.SerialPortStream;
+using ReactorControl.Providers;
 using RJCP.IO.Ports;
 using System;
 using System.Collections;

@@ -1,10 +1,12 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using MsBox.Avalonia;
+using ReactorControl.Providers;
 using ReactorControl.ViewModels;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 
 namespace ReactorControl.Views;
 
@@ -21,6 +23,7 @@ public partial class MainWindow : Window
         btnConnectAll.Click += BtnConnectAll_Click;
         btnDisconnectAll.Click += BtnDisconnectAll_Click;
         btnRescanPorts.Click += BtnRescanPorts_Click;
+        btnCreateExampleScript.Click += BtnCreateExampleScript_Click;
         Closing += MainWindow_Closing;
     }
 
@@ -117,5 +120,21 @@ public partial class MainWindow : Window
     private async void Vm_ListChanged(object? sender, EventArgs e)
     {
         await ViewModel.Trigger();
+    }
+
+    private async void BtnCreateExampleScript_Click(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            await ScriptProvider.WriteExampleScript(Path.Combine(Environment.CurrentDirectory, "example_script.yaml"));
+            var m = MessageBoxManager.GetMessageBoxStandard("Example Script", "Exmaple written OK. Check working directory.");
+            await m.ShowAsPopupAsync(this);
+        }
+        catch (Exception ex)
+        {
+            var m = MessageBoxManager.GetMessageBoxStandard("Example Script", 
+                $"Failed to write example script, details below.{Environment.NewLine}{ex}");
+            await m.ShowAsPopupAsync(this);
+        }
     }
 }

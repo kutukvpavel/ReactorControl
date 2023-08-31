@@ -34,10 +34,10 @@
 			<TextBlock Grid.Column="0" Grid.Row="1" Classes="name">Set rate:</TextBlock>
 			<TextBox Grid.Column="1" Grid.Row="1" Text="{Binding CommandedSpeed}" KeyDown="Commanded_KeyDown"
 					 IsReadOnly="{Binding !CanEdit}" x:Name="txtCommanded" Background="{Binding CommandedColor}"></TextBox>
-			<TextBlock Grid.Column="2" Grid.Row="1" Classes="unit" Text="{Binding VolumeRateUnit}">mL/min</TextBlock>
+			<TextBlock Grid.Column="2" Grid.Row="1" Classes="unit" Text="{Binding VolumeRateUnit}">mL/s</TextBlock>
 			<TextBlock Grid.Column="0" Grid.Row="2" Classes="name">Actual rate:</TextBlock>
 			<TextBlock Grid.Column="1" Grid.Row="2" Classes="value" Text="{Binding VolumeRate}"></TextBlock>
-			<TextBlock Grid.Column="2" Grid.Row="2" Classes="unit" Text="{Binding VolumeRateUnit}">mL/min</TextBlock>
+			<TextBlock Grid.Column="2" Grid.Row="2" Classes="unit" Text="{Binding VolumeRateUnit}">mL/s</TextBlock>
 			<TextBlock Grid.Column="0" Grid.Row="3" Classes="name">Rotation speed:</TextBlock>
 			<TextBlock Grid.Column="1" Grid.Row="3" Classes="value" Text="{Binding RotationSpeed}"></TextBlock>
 			<TextBlock Grid.Column="2" Grid.Row="3" Classes="unit">Hz</TextBlock>

@@ -49,8 +49,8 @@ public class ControllerConfig
     [DefaultValue(1)]
     public byte ModbusAddress {get;set;} = 1;
     [DisplayName("Volume rate units to display")]
-    [DefaultValue("mL/min")]
-    public string VolumeRateUnit { get; set; } = "mL/min";
+    [DefaultValue("mL/s")]
+    public string VolumeRateUnit { get; set; } = "mL/s";
     [DisplayName("Volume units to display")]
     [DefaultValue("mL")]
     public string VolumeUnit { get; set; } = "mL";

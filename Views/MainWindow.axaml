@@ -23,6 +23,7 @@
 				<MenuItem Header="Add/Remove Devices" Click="AddRemove_Click" IsEnabled="{Binding !IsAnyoneConnected}"></MenuItem>
 			</MenuItem>
 			<MenuItem Header="Help">
+				<MenuItem Header="Create Example Script" x:Name="btnCreateExampleScript"></MenuItem>
 				<MenuItem Header="Project Repository" x:Name="btnProjectRepo"></MenuItem>
 				<MenuItem Header="About" x:Name="btnAbout"></MenuItem>
 			</MenuItem>

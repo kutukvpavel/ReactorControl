@@ -69,4 +69,11 @@ public partial class ControllerControl : UserControl
         RegisterViewWindow.Closed -= Vw_Closed;
         RegisterViewWindow = null;
     }
+
+    private async void OpenScript_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not ControllerControlViewModel vm) return;
+
+        await vm.OpenScriptFile();
+    }
 }

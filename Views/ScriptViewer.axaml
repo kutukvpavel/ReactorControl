@@ -1,0 +1,32 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 xmlns:local="clr-namespace:ReactorControl.Views;assembly=ReactorControl"
+             mc:Ignorable="d"
+             x:Class="ReactorControl.Views.ScriptViewer">
+    <StackPanel>
+        <StackPanel>
+            <TextBlock Text="{Binding Status}" Background="{Binding StatusColor}"></TextBlock>
+            <Button Click="Start_Click" IsVisible="{Binding CanStart}">Start</Button>
+            <Button Click="Stop_Click" IsVisible="{Binding CanStop}">Stop</Button>
+            <Button Click="Pause_Click" IsVisible="{Binding CanPause}">Pause</Button>
+            <Button Click="Resume_Click" IsVisible="{Binding CanResume}">Resume</Button>
+        </StackPanel>
+        <ScrollViewer VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Visible" 
+            Padding="1,1,1,1" Margin="0,5,0,0">
+            <ItemsControl ItemsSource="{Binding Threads}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal"></StackPanel>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <local:ScriptThread DataContext="{Binding}"></local:ScriptThread>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </StackPanel>
+</UserControl>

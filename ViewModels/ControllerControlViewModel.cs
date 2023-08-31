@@ -6,11 +6,13 @@ using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Avalonia.Controls;
 using DynamicData;
 using ModbusRegisterMap;
 using ReactorControl.Models;
 using ReactorControl.Providers;
 using RJCP.IO.Ports;
+using MsBox.Avalonia;
 
 namespace ReactorControl.ViewModels;
 
@@ -40,10 +42,7 @@ public class ControllerControlViewModel : ViewModelBase
         {
             OutProviders.Add(new CsvProvider(SettingsContext.CsvFolder, Name));
         }
-        foreach (var item in InProviders)
-        {
-            item.CommandReceived += Item_CommandReceived;
-        }
+        ScriptViewerInstance = new ScriptViewerViewModel(Instance);
     }
 
     private async void Item_CommandReceived(object? sender, IpcEventArgs e)
@@ -166,6 +165,9 @@ public class ControllerControlViewModel : ViewModelBase
         Constants.Modes.LampTest => Brushes.Magenta,
         _ => Brushes.LightGray
     };
+    public bool CanOpenScript => (ScriptInstance?.State ?? ScriptProvider.ExecutionState.Stopped)
+        == ScriptProvider.ExecutionState.Stopped;
+    public ScriptViewerViewModel ScriptViewerInstance { get; }
 
     public string Name
     {
@@ -190,6 +192,7 @@ public class ControllerControlViewModel : ViewModelBase
     public Settings SettingsContext { get; private set; }
     public List<IOutputProvider> OutProviders { get; } = new List<IOutputProvider>();
     public List<IInputProvider> InProviders { get; } = new List<IInputProvider>();
+    public ScriptProvider? ScriptInstance { get; private set; }
 
     public async Task Connect()
     {
@@ -217,5 +220,32 @@ public class ControllerControlViewModel : ViewModelBase
     {
         SettingsContext = s;
         RaisePropertyChanged(nameof(SettingsContext));
+    }
+    public async Task OpenScriptFile()
+    {
+        if (!CanOpenScript) return;
+
+        var dialog = new OpenFileDialog();
+        dialog.Filters.Add(new FileDialogFilter() { Name = "YAML files", Extensions = new List<string>() { "yaml" } });
+        dialog.Title = "Select script file...";
+        dialog.Directory = Environment.CurrentDirectory;
+        var files = await dialog.ShowAsync((App.Current as App).MainWindow);
+        if ((files?.Length ?? 0) == 0) return;
+        
+        try
+        {
+            var s = await ScriptProvider.ReadScript(files[0]);
+            if (s.PumpsUsed.Any(x => x >= Instance.TotalPumps) && IsConnected)
+                throw new InvalidOperationException("Some of the specified pumps don't exist in this device");
+            s.TargetDeviceName = Instance.Config.Name;
+            ScriptInstance = new ScriptProvider(s);
+            ScriptInstance.CommandReceived += Item_CommandReceived;
+            ScriptViewerInstance.SetProvider(ScriptInstance);
+            RaisePropertyChanged(nameof(ScriptViewerInstance));
+        }
+        catch (Exception ex)
+        {
+            MessageBoxManager.GetMessageBoxStandard("Error", ex.ToString());
+        }
     }
 }

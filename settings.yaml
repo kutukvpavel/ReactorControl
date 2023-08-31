@@ -7,5 +7,5 @@ DeviceBackupFolder: backup
 MaxDeviceBackupsToStore: 10
 IgnoreDeviceFolderBackupErrors: false
 CsvFolder: csv
-MainWindowWidth: 1323
+MainWindowWidth: 1476
 MainWindowHeight: 841

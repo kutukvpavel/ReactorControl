@@ -21,7 +21,7 @@
 			<Setter Property="HorizontalContentAlignment" Value="Center"></Setter>
 		</Style>
 	</UserControl.Styles>
-	<Grid ColumnDefinitions="auto,*,*" RowDefinitions="*,auto,auto">
+	<Grid ColumnDefinitions="auto,*,*,auto" RowDefinitions="*,auto,auto">
 		<Expander ExpandDirection="Right" Grid.Column="0" Grid.RowSpan="3" VerticalContentAlignment="Top"
 				  VerticalAlignment="Stretch" Margin="1" x:Name="expLeft">
 			<Expander.Header>
@@ -106,5 +106,21 @@
 				<TextBlock Classes="StatusText" Background="{Binding ModeColor}" Text="{Binding ModeString}"></TextBlock>
 			</StackPanel>
 		</Border>
+		<Expander ExpandDirection="Left" Grid.Column="3" Grid.RowSpan="3" VerticalContentAlignment="Top"
+				  VerticalAlignment="Stretch" Margin="1" x:Name="expRight" MaxWidth="500">
+			<Expander.Header>
+				<LayoutTransformControl>
+					<LayoutTransformControl.LayoutTransform>
+						<RotateTransform Angle="270"></RotateTransform>
+					</LayoutTransformControl.LayoutTransform>
+					<TextBlock Text="Script"></TextBlock>
+				</LayoutTransformControl>
+			</Expander.Header>
+			<StackPanel>
+				<Button x:Name="btnOpenScript" Click="OpenScript_Click" Background="LightBlue"
+					IsEnabled="{Binding CanOpenScript}">Open File...</Button>
+				<local:ScriptViewer DataContext="{Binding ScriptViewerInstance}" />
+			</StackPanel>
+		</Expander>
 	</Grid>
 </UserControl>

@@ -13,6 +13,7 @@ using ReactorControl.Models;
 using ReactorControl.Providers;
 using RJCP.IO.Ports;
 using MsBox.Avalonia;
+using System.ComponentModel;
 
 namespace ReactorControl.ViewModels;
 
@@ -45,6 +46,10 @@ public class ControllerControlViewModel : ViewModelBase
         ScriptViewerInstance = new ScriptViewerViewModel(Instance);
     }
 
+    private void Script_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        RaisePropertyChanged(nameof(CanOpenScript));
+    }
     private async void Item_CommandReceived(object? sender, IpcEventArgs e)
     {
         if (e.TargetDeviceName != Name) return;
@@ -234,12 +239,18 @@ public class ControllerControlViewModel : ViewModelBase
         
         try
         {
+            if (ScriptInstance != null)
+            {
+                ScriptInstance.PropertyChanged -= Script_PropertyChanged;
+            }
+
             var s = await ScriptProvider.ReadScript(files[0]);
             if (s.PumpsUsed.Any(x => x >= Instance.TotalPumps) && IsConnected)
                 throw new InvalidOperationException("Some of the specified pumps don't exist in this device");
             s.TargetDeviceName = Instance.Config.Name;
             ScriptInstance = new ScriptProvider(s);
             ScriptInstance.CommandReceived += Item_CommandReceived;
+            ScriptInstance.PropertyChanged += Script_PropertyChanged;
             ScriptViewerInstance.SetProvider(ScriptInstance);
             RaisePropertyChanged(nameof(ScriptViewerInstance));
         }

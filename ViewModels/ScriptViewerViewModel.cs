@@ -1,12 +1,7 @@
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Globalization;
-using System.Threading;
-using System.Threading.Tasks;
 using Avalonia.Media;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using ReactorControl.Models;
 using ReactorControl.Providers;
 
@@ -23,6 +18,7 @@ namespace ReactorControl.ViewModels
             mController.PropertyChanged += Controller_PropertyChanged;
         }
 
+        public string ScriptName => mProvider?.ScriptInstance?.Name ?? string.Empty;
         public ObservableCollection<ScriptThreadViewModel> Threads { get; } = new();
         private bool CanBase => mController.IsConnected && (mController.Mode == Constants.Modes.Auto) && !ValidationMode;
         public bool CanStart => CanBase && (mProvider?.State == ScriptProvider.ExecutionState.Stopped);
@@ -56,6 +52,9 @@ namespace ReactorControl.ViewModels
                 }
             }
         }
+        public bool ShowProgress => 
+            (mProvider?.State ?? ScriptProvider.ExecutionState.Stopped) == ScriptProvider.ExecutionState.Running;
+        public double Progress => mProvider?.Progress ?? 0;
 
         public void SetProvider(ScriptProvider? p, bool validationMode = false)
         {
@@ -69,6 +68,7 @@ namespace ReactorControl.ViewModels
                 Threads.Add(new ScriptThreadViewModel(t));
             }
             ValidationMode = validationMode;
+            RaisePropertyChanged(nameof(ScriptName));
             RaisePropertyChanged(nameof(Threads));
             RaisePropertyChanged(nameof(CanStart));
             RaisePropertyChanged(nameof(CanStop));
@@ -98,6 +98,8 @@ namespace ReactorControl.ViewModels
             RaisePropertyChanged(nameof(CanResume));
             RaisePropertyChanged(nameof(Status));
             RaisePropertyChanged(nameof(StatusColor));
+            RaisePropertyChanged(nameof(ShowProgress));
+            RaisePropertyChanged(nameof(Progress));
         }
     }
 }

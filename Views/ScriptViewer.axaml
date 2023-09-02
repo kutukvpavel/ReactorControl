@@ -5,16 +5,29 @@
 			 xmlns:local="clr-namespace:ReactorControl.Views;assembly=ReactorControl"
              mc:Ignorable="d"
              x:Class="ReactorControl.Views.ScriptViewer">
-    <StackPanel>
-        <StackPanel>
-            <TextBlock Text="{Binding Status}" Background="{Binding StatusColor}"></TextBlock>
-            <Button Click="Start_Click" IsVisible="{Binding CanStart}">Start</Button>
-            <Button Click="Stop_Click" IsVisible="{Binding CanStop}">Stop</Button>
-            <Button Click="Pause_Click" IsVisible="{Binding CanPause}">Pause</Button>
-            <Button Click="Resume_Click" IsVisible="{Binding CanResume}">Resume</Button>
+    <UserControl.Styles>
+        <Style Selector="TextBlock.label">
+            <Setter Property="Margin" Value="0,0,5,0"/>
+        </Style>
+        <Style Selector="Button">
+            <Setter Property="Margin" Value="3"/>
+        </Style>
+    </UserControl.Styles>
+    <Grid ColumnDefinitions="auto,*" RowDefinitions="auto,auto,auto,auto,*">
+        <TextBlock Grid.Column="0" Grid.Row="0" Classes="label">Name:</TextBlock>
+        <TextBlock Grid.Column="1" Grid.Row="0" Text="{Binding ScriptName}"></TextBlock>
+        <TextBlock Grid.Column="0" Grid.Row="1" Classes="label">Status:</TextBlock>
+        <TextBlock Grid.Column="1" Grid.Row="1" Text="{Binding Status}" Background="{Binding StatusColor}" Padding="1"></TextBlock>
+        <ProgressBar Grid.ColumnSpan="2" Grid.Row="2" Height="18" Margin="1"
+            IsEnabled="{Binding ShowProgress}" Value="{Binding Progress}"/>
+        <StackPanel Grid.ColumnSpan="2" Grid.Row="3" Orientation="Horizontal">
+            <Button Click="Start_Click" IsVisible="{Binding CanStart}" Background="LightGreen">Start</Button>
+            <Button Click="Resume_Click" IsVisible="{Binding CanResume}" Background="LightGreen">Resume</Button>
+            <Button Click="Pause_Click" IsVisible="{Binding CanPause}" Background="LightSalmon">Pause</Button>
+            <Button Click="Stop_Click" IsVisible="{Binding CanStop}" Background="LightCoral">Stop</Button>
         </StackPanel>
-        <ScrollViewer VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Visible" 
-            Padding="1,1,1,1" Margin="0,5,0,0">
+        <ScrollViewer Grid.ColumnSpan="2" Grid.Row="4" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Visible" 
+            Padding="1,1,1,1" Margin="0,5,0,0" VerticalAlignment="Stretch">
             <ItemsControl ItemsSource="{Binding Threads}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
@@ -28,5 +41,5 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
         </ScrollViewer>
-    </StackPanel>
+    </Grid>
 </UserControl>

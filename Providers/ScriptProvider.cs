@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
 using Avalonia.Threading;
@@ -100,16 +99,18 @@ namespace ReactorControl.Providers
             }
 
             public string? Description { get; set; }
-            public List<int> Pumps {get; set;} = new List<int>();
-            public bool? StopAfterCompletion {get; set;} = true;
-            public List<Command> Commands {get; set;} = new List<Command>();
+            public List<int> Pumps { get; set; } = new List<int>();
+            public bool? StopAfterCompletion { get; set; } = true;
+            public List<Command> Commands { get; set; } = new List<Command>();
 
             [YamlIgnore]
-            public ExecutionState State {get; private set;} = ExecutionState.Stopped;
+            public ExecutionState State { get; private set; } = ExecutionState.Stopped;
             [YamlIgnore]
-            public bool IsCompleted {get; private set;} = false;
+            public bool IsCompleted { get; private set; } = false;
             [YamlIgnore]
-            public Command? ActiveCommand {get; private set;}
+            public Command? ActiveCommand { get; private set; }
+            [YamlIgnore]
+            public double Progress { get; private set; }
 
             public void Stop()
             {
@@ -163,6 +164,7 @@ namespace ReactorControl.Providers
             }
             public void Initialize()
             {
+                ProgressIncrement = Commands.Count > 0 ? 1 / Commands.Count : 1;
                 Timer.Elapsed += Timer_Elapsed;
                 StopCommand.CalculateTime();
                 foreach (var item in Commands)
@@ -181,6 +183,8 @@ namespace ReactorControl.Providers
             protected Timer Timer = new Timer() { AutoReset = false };
             [YamlIgnore]
             protected int Index = 0;
+            [YamlIgnore]
+            protected double ProgressIncrement;
             private void Timer_Elapsed(object? sender, ElapsedEventArgs? e)
             {
                 HrTimer.Reset();
@@ -197,6 +201,7 @@ namespace ReactorControl.Providers
                             CommandIssued?.Invoke(this, StopCommand);
                         }
                     }
+                    Progress += ProgressIncrement;
                     CommandIssued?.Invoke(this, next);
                     Timer.Start();
                     HrTimer.Start();
@@ -205,6 +210,7 @@ namespace ReactorControl.Providers
                 }
                 else
                 {
+                    Progress = 1;
                     if (ActiveCommand != null) 
                     {
                         ActiveCommand.IsActive = false;
@@ -245,8 +251,6 @@ namespace ReactorControl.Providers
                 }
                 if (PumpsUsed.Distinct().Count() < PumpsUsed.Count)
                     throw new InvalidOperationException("Conflicting thread declarations: a pump can't belong to more than one thread.");
-                /*if (pumpDecls.Any(x => x >= totalPumps))
-                    throw new InvalidOperationException("Some of the declared pumps don't exist in specified device.");*/
                 foreach (var thread in Threads)
                 {
                     thread.Initialize();
@@ -341,7 +345,6 @@ namespace ReactorControl.Providers
         public ScriptProvider(Script s)
         {
             ScriptInstance = s;
-            Progress = new double[ScriptInstance.Threads.Count];
             foreach (var thread in ScriptInstance.Threads)
             {
                 thread.CommandIssued += Thread_CommandIssued;
@@ -353,13 +356,14 @@ namespace ReactorControl.Providers
         public ExecutionState State { get; private set; } = ExecutionState.Stopped;
         public bool IsCompleted { get; private set; } = false;
         public bool IsAborted { get; private set; } = false;
-        public double[] Progress { get; }
+        public double Progress { get; private set; }
         public int TotalThreads => ScriptInstance.Threads.Count;
 
         public void Start()
         {
             if (State != ExecutionState.Stopped) throw new InvalidOperationException();
             IsCompleted = false;
+            IsAborted = false;
             foreach (var thread in ScriptInstance.Threads)
             {
                 thread.Start();
@@ -368,6 +372,7 @@ namespace ReactorControl.Providers
             Dispatcher.UIThread.Post(() =>
             {
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsCompleted)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsAborted)));
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(State)));
             });
         }
@@ -414,6 +419,7 @@ namespace ReactorControl.Providers
             });
         }
 
+        protected object CompletionLock = new();
         protected void Thread_CommandIssued(object? sender, Command e)
         {
             IpcEventArgs ipc = new()
@@ -427,16 +433,28 @@ namespace ReactorControl.Providers
             {
                 CommandReceived?.Invoke(this, ipc);
             }
-            Dispatcher.UIThread.Post(() => 
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Progress))));
+            Dispatcher.UIThread.Post(() =>
+            {
+                Progress = ScriptInstance.Threads.Min(x => x.Progress);
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Progress)));
+            });
         }
         protected void Thread_Completed(object? sender, EventArgs e)
         {
-            if (ScriptInstance.Threads.All(x => x.IsCompleted))
+            if (IsCompleted) return;
+            bool all = false;
+            lock (CompletionLock) 
             {
-                IsCompleted = true;
-                IsAborted = false;
-                State = ExecutionState.Stopped;
+                all = ScriptInstance.Threads.All(x => x.IsCompleted);
+                if (all)
+                {
+                    IsCompleted = true;
+                    IsAborted = false;
+                    State = ExecutionState.Stopped;
+                }
+            }
+            if (all)
+            {
                 Dispatcher.UIThread.Post(() => {
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsCompleted)));
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsAborted)));

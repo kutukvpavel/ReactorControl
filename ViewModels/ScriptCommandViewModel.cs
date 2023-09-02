@@ -1,5 +1,4 @@
 using System;
-using System.Threading.Tasks;
 using Avalonia.Media;
 using ReactorControl.Providers;
 
@@ -24,7 +23,7 @@ namespace ReactorControl.ViewModels
                 return "N/A";
             }
         }
-        public IBrush HighlightBrush => mCommand.IsActive ? Brushes.LightGreen : Brushes.LightBlue;
+        public IBrush HighlightBrush => mCommand.IsActive ? Brushes.LimeGreen : Brushes.LightGray;
 
         private void mCommand_ActivityChanged(object? sender, EventArgs e)
         {

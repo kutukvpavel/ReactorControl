@@ -24,6 +24,7 @@
 			</MenuItem>
 			<MenuItem Header="Help">
 				<MenuItem Header="Create Example Script" x:Name="btnCreateExampleScript"></MenuItem>
+				<Separator />
 				<MenuItem Header="Project Repository" x:Name="btnProjectRepo"></MenuItem>
 				<MenuItem Header="About" x:Name="btnAbout"></MenuItem>
 			</MenuItem>

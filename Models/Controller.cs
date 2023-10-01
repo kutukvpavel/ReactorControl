@@ -198,6 +198,8 @@ namespace ReactorControl.Models
                 Log(ex, "Failed to initialize register map.");
                 return false;
             }
+            Console.WriteLine($"Regmap for '{Config.Name}' initialized:");
+            Console.Write(RegisterMap.GetDescription());
             return true;
         }
         protected static DevUShort SetFlag(ushort v, Constants.InterfaceActivityBits b, bool set = true)

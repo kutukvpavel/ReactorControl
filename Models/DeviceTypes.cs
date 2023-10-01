@@ -1,5 +1,4 @@
 using System;
-using System.Drawing;
 using ModbusRegisterMap;
 using YamlDotNet.Serialization;
 
@@ -10,18 +9,41 @@ namespace ReactorControl.Models
         public DevPumpParams()
         {
             Fields = new IDeviceType[] {
-                InvertEnable,
-                Reserved,
-                VolumeRateResolution
+                _InvertEnable,
+                _Reserved,
+                _VolumeRateResolution
             };
         }
 
-        public DevUShort InvertEnable { get; set; } = new();
-        public DevUShort Reserved { get; set; } = new();
-        public DevFloat VolumeRateResolution { get; set; } = new();
+        readonly DevUShort _InvertEnable = new();
+        public DevUShort InvertEnable
+        {
+            get => _InvertEnable;
+            set {
+                _InvertEnable.Value = value.Value;
+            }
+        }
 
-        [YamlIgnore]
-        public override ushort Size => 1 + 1 + 2;
+        readonly DevUShort _Reserved = new();
+        public DevUShort Reserved
+        {
+            get => _Reserved;
+            set {
+                _Reserved.Value = value.Value;
+            }
+        }
+
+        readonly DevFloat _VolumeRateResolution = new();
+        public DevFloat VolumeRateResolution
+        {
+            get => _VolumeRateResolution;
+            set {
+                _VolumeRateResolution.Value = value.Value;
+            }
+        }
+
+        /*[YamlIgnore]
+        public override ushort Size => 1 + 1 + 2;*/
         public override object Get()
         {
             return this;
@@ -37,26 +59,81 @@ namespace ReactorControl.Models
         public DevMotorParams()
         {
             Fields = new IDeviceType[] {
-                Direction,
-                Microsteps,
-                Teeth,
-                Reserved,
-                VolumeRateToRPS,
-                MaxRateRPS,
-                MaxLoadError
+                _Direction,
+                _Microsteps,
+                _Teeth,
+                _Reserved,
+                _VolumeRateToRPS,
+                _MaxRateRPS,
+                _MaxLoadError
             };
         }
 
-        public DevUShort Direction {get;set;} = new();
-        public DevUShort Microsteps {get;set;} = new();
-        public DevUShort Teeth {get;set;} = new();
-        public DevUShort Reserved {get;set;} = new();
-        public DevFloat VolumeRateToRPS {get;set;} = new();
-        public DevFloat MaxRateRPS {get;set;} = new();
-        public DevFloat MaxLoadError {get;set;} = new();
+        readonly DevUShort _Direction = new();
+        public DevUShort Direction
+        {
+            get => _Direction;
+            set {
+                _Direction.Value = value.Value;
+            }
+        }
 
-        [YamlIgnore]
-        public override ushort Size => 1 * 4 + 2 * 3;
+        readonly DevUShort _Microsteps = new();
+        public DevUShort Microsteps
+        {
+            get => _Microsteps;
+            set {
+                _Microsteps.Value = value.Value;
+            }
+        }
+
+        readonly DevUShort _Teeth = new();
+        public DevUShort Teeth
+        {
+            get => _Teeth;
+            set {
+                _Teeth.Value = value.Value;
+            }
+        }
+
+        readonly DevUShort _Reserved = new();
+        public DevUShort Reserved
+        {
+            get => _Reserved;
+            set {
+                _Reserved.Value = value.Value;
+            }
+        }
+
+        readonly DevFloat _VolumeRateToRPS = new();
+        public DevFloat VolumeRateToRPS
+        {
+            get => _VolumeRateToRPS;
+            set {
+                _VolumeRateToRPS.Value = value.Value;
+            }
+        }
+
+        readonly DevFloat _MaxRateRPS = new();
+        public DevFloat MaxRateRPS
+        {
+            get => _MaxRateRPS;
+            set {
+                _MaxRateRPS.Value = value.Value;
+            }
+        }
+
+        readonly DevFloat _MaxLoadError = new();
+        public DevFloat MaxLoadError
+        {
+            get => _MaxLoadError;
+            set {
+                _MaxLoadError.Value = value.Value;
+            }
+        }
+
+        /*[YamlIgnore]
+        public override ushort Size => 1 * 4 + 2 * 3;*/
         public override object Get()
         {
             return this;
@@ -72,24 +149,67 @@ namespace ReactorControl.Models
         public DevMotorReg()
         {
             Fields = new IDeviceType[] {
-                VolumeRate,
-                RPS,
-                Error,
-                Status,
-                Reserved1,
-                RunTimeLeft
+                _VolumeRate,
+                _RPS,
+                _Error,
+                _Status,
+                _Reserved1,
+                _RunTimeLeft
             };
         }
 
-        public DevFloat VolumeRate { get; set; } = new();
-        public DevFloat RPS { get; set; } = new();
-        public DevFloat Error { get; set; } = new();
-        public DevUShort Status { get; set; } = new();
-        public DevUShort Reserved1 {get;set;} = new();
-        public DevFloat RunTimeLeft {get;set;} = new();
+        readonly DevFloat _VolumeRate = new();
+        public DevFloat VolumeRate
+        {
+            get => _VolumeRate;
+            set {
+                _VolumeRate.Value = value.Value;
+            }
+        }
+        readonly DevFloat _RPS = new();
+        public DevFloat RPS
+        {
+            get => _RPS;
+            set {
+                _RPS.Value = value.Value;
+            }
+        }
+        readonly DevFloat _Error = new();
+        public DevFloat Error
+        {
+            get => _Error;
+            set {
+                _Error.Value = value.Value;
+            }
+        }
+        readonly DevUShort _Status = new();
+        public DevUShort Status
+        {
+            get => _Status;
+            set {
+                _Status.Value = value.Value;
+            }
+        }
+        readonly DevUShort _Reserved1 = new();
+        public DevUShort Reserved1
+        {
+            get => _Reserved1;
+            set {
+                _Reserved1.Value = value.Value;
+            }
+        }
+        readonly DevFloat _RunTimeLeft = new();
+        public DevFloat RunTimeLeft
+        {
+            get => _RunTimeLeft;
+            set {
+                _RunTimeLeft.Value = value.Value;
+            }
+        }
+        
 
-        [YamlIgnore]
-        public override ushort Size => 2 + 2 + 2 + 1 + 1 + 2;
+        /*[YamlIgnore]
+        public override ushort Size => 2 + 2 + 2 + 1 + 1 + 2;*/
         public override object Get()
         {
             return this;

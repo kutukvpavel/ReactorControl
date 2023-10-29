@@ -17,8 +17,9 @@
         <TextBlock Grid.Column="0" Grid.Row="0" Classes="label">Name:</TextBlock>
         <TextBlock Grid.Column="1" Grid.Row="0" Text="{Binding ScriptName}"></TextBlock>
         <TextBlock Grid.Column="0" Grid.Row="1" Classes="label">Status:</TextBlock>
-        <TextBlock Grid.Column="1" Grid.Row="1" Text="{Binding Status}" Background="{Binding StatusColor}" Padding="1"></TextBlock>
-        <ProgressBar Grid.ColumnSpan="2" Grid.Row="2" Height="18" Margin="1"
+        <TextBlock Grid.Column="1" Grid.Row="1" Text="{Binding Status}" Background="{Binding StatusColor}"
+            Padding="1" Margin="1"></TextBlock>
+        <ProgressBar Grid.ColumnSpan="2" Grid.Row="2" Height="18" Margin="2,3,2,1"
             IsEnabled="{Binding ShowProgress}" Value="{Binding Progress}"/>
         <StackPanel Grid.ColumnSpan="2" Grid.Row="3" Orientation="Horizontal">
             <Button Click="Start_Click" IsVisible="{Binding CanStart}" Background="LightGreen">Start</Button>

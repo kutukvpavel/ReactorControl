@@ -16,6 +16,7 @@ namespace ReactorControl.ViewModels
         {
             mController = c;
             mController.PropertyChanged += Controller_PropertyChanged;
+            mController.UnexpectedDisconnect += Controller_UnexpectedDisconnect;
         }
 
         public string ScriptName => mProvider?.ScriptInstance?.Name ?? string.Empty;
@@ -61,11 +62,13 @@ namespace ReactorControl.ViewModels
             if (mProvider != null) mProvider.PropertyChanged -= Provider_PropertyChanged;
             mProvider = p;
             Threads.Clear();
-            if (mProvider == null) return;
-            mProvider.PropertyChanged += Provider_PropertyChanged;
-            foreach (var t in mProvider.ScriptInstance.Threads)
+            if (mProvider != null)
             {
-                Threads.Add(new ScriptThreadViewModel(t));
+                mProvider.PropertyChanged += Provider_PropertyChanged;
+                foreach (var t in mProvider.ScriptInstance.Threads)
+                {
+                    Threads.Add(new ScriptThreadViewModel(t));
+                }
             }
             ValidationMode = validationMode;
             RaisePropertyChanged(nameof(ScriptName));
@@ -81,6 +84,10 @@ namespace ReactorControl.ViewModels
             return mProvider;
         }
 
+        private void Controller_UnexpectedDisconnect(object? sender, EventArgs e)
+        {
+            SetProvider(null);
+        }
         private void Controller_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName != nameof(Controller.IsConnected) && e.PropertyName != nameof(Controller.Mode)) return;
